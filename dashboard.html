@@ -1,7 +1,7 @@
-<!DOCTYPE html
-
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <title>gmunk | Dashboard</title>
+  <title>gmunk | Music Label Dashboard</title>
   <link rel="stylesheet" href="asset/css/global.css">
   <style>
     @import url("asset/css/color/green.css");
@@ -19,6 +19,8 @@ navLight = new Image();
 navLight.src = "../assets/cssimg/navLightGreen.gif";
 //-->
 </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="auth.js" defer></script>
 </head>
 
 <body>
@@ -51,17 +53,17 @@ navLight.src = "../assets/cssimg/navLightGreen.gif";
           alt="New Ezra - Rebuilding Design" width="668" height="170" /></div>
       <div id="contMain">
         <div id="leftColumn">
-          <h1>Login</h1>
-          <p>Label members can login through here to upload releases and receive payouts.</p>
-          <form name="login"
-            action="https://web.archive.org/web/20040806063337/http://www.newezra.com/xhtml/home/" method="post">
-            <input name="newsletterEmail" type="text" class="newsletterInput" value="Email Address"
-              onfocus="if (this.value == 'Email Address') this.value = '';" size="52" />
-            <input name="newsletterEmail" type="text" class="newsletterInput" value="Password"
-              onfocus="if (this.value == 'Password') this.value = '';" size="52" />
-            <input name="isSubmitted" type="hidden" value="true" />
+          <h1>Music Label Dashboard</h1>
+          <p>Authorized members can login to manage music releases and distribution.</p>
+          <form id="loginForm" onsubmit="handleLogin(event)">
+            <input id="email" type="email" class="newsletterInput" value="Email Address"
+              onfocus="if (this.value == 'Email Address') this.value = '';" size="52" required />
+            <input id="password" type="password" class="newsletterInput" value="Password"
+              onfocus="if (this.value == 'Password') this.value = '';" size="52" required />
             <input class="submit" type="submit" name="Submit" value="Login" />
           </form>
+          <div id="authMessage"></div>
+          <p>This dashboard is invitation-only</p>
         </div>
       </div>
     </div>

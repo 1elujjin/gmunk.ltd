@@ -25,6 +25,7 @@ h1 {
 	text-transform: uppercase;
 	clear: left;
 }
+
 h2 {
 	padding: 6px 0 0 10px;
 	margin: 0;
@@ -336,4 +337,43 @@ h5 a:link	{
 	voice-family:inherit;
 	width: 103px;
 	height: 24px;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+.data-table th,
+.data-table td {
+  padding: 12px 15px;
+  text-align: left;
+  border-bottom: 1px solid #333;
+}
+
+.data-table th {
+  background-color: #444;
+  color: #fff;
+}
+
+.data-table tbody tr:nth-child(even) {
+  background-color: #555;
+}
+
+.data-table tbody tr:nth-child(odd) {
+  background-color: #505050;
+}
+
+.data-table tbody tr:hover {
+  background-color: #666;
+}
+
+/* Admin tab content */
+.admin-tab-content {
+  display: none;
+}
+
+.admin-tab-content.active {
+  display: block;
 }
