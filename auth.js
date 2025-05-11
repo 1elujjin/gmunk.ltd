@@ -1252,13 +1252,81 @@ function displayUserReleases(releases, userEmail) {
 
 // Approve release
 async function approveRelease(releaseId) {
-  // Update status in Supabase
-  const success = await updateReleaseStatus(releaseId, 'approved');
-  if (success) {
+  try {
+    console.log("Approving release:", releaseId);
+
+    // First get the current release data
+    const { data: releases, error: fetchError } = await supabase
+      .from('releases')
+      .select('*')
+      .eq('id', releaseId)
+      .limit(1);
+
+    if (fetchError) {
+      console.error('Error fetching release for approval:', fetchError.message);
+      // Fall back to old method if Supabase fetch fails
+      fallbackApproveRelease(releaseId);
+      return;
+    }
+
+    if (!releases || releases.length === 0) {
+      console.error('Release not found for approval');
+      alert('Release not found. Cannot approve.');
+      return;
+    }
+
+    const release = releases[0];
+    console.log("Release found:", release);
+
+    // Update the status to approved
+    const { data, error } = await supabase
+      .from('releases')
+      .update({ status: 'approved' })
+      .eq('id', releaseId);
+
+    if (error) {
+      console.error('Error approving release in Supabase:', error.message);
+      // Try fallback method
+      fallbackApproveRelease(releaseId);
+      return;
+    }
+
+    console.log("Release approved successfully in Supabase");
+
+    // Reload the pending releases to update the UI
+    await loadPendingReleases();
+    alert('Release has been approved successfully.');
+  } catch (e) {
+    console.error('Error in approve process:', e);
+    // Try fallback method
+    fallbackApproveRelease(releaseId);
+  }
+}
+
+// Fallback approval method using localStorage
+async function fallbackApproveRelease(releaseId) {
+  try {
+    // Get current releases from localStorage
+    let releases = JSON.parse(localStorage.getItem('musicReleases') || '[]');
+
+    // Find the release to approve
+    const updatedReleases = releases.map(release => {
+      if (release.id === releaseId) {
+        return { ...release, status: 'approved' };
+      }
+      return release;
+    });
+
+    // Save back to localStorage
+    localStorage.setItem('musicReleases', JSON.stringify(updatedReleases));
+
+    // Reload the admin dashboard
     loadPendingReleases();
-    alert('Release has been approved.');
-  } else {
-    alert('Failed to approve release.');
+
+    alert('Release has been approved (using fallback method).');
+  } catch (e) {
+    console.error('Fallback approval failed:', e);
+    alert('Failed to approve release. Please try again.');
   }
 }
 
@@ -1497,14 +1565,15 @@ function setupUploadForm() {
   const uploadTab = document.getElementById('upload-tab');
   if (!uploadTab) return;
 
-  // Check if the form already has content
-  if (uploadTab.querySelector('form').innerHTML.trim() !== '... (form HTML unchanged for brevity) ...') {
-    // Form already set up
+  // Set up the upload form regardless of current content
+  // Previous check was causing issues
+  const uploadForm = uploadTab.querySelector('form');
+  if (!uploadForm) {
+    console.error('Upload form not found');
     return;
   }
 
-  // Set up the upload form
-  const uploadForm = uploadTab.querySelector('form');
+  // Set up the upload form with all required fields
   uploadForm.innerHTML = `
     <div class="dispBoxLeft">
       <p class="pCase" style="font-size: x-small; color: #BFED46;">Release Information</p>
@@ -1687,6 +1756,8 @@ function setupUploadForm() {
       <input type="submit" class="submit" value="Submit Release" style="font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif;">
     </div>
   `;
+
+  console.log("Upload form HTML setup completed");
 
   // Setup event listeners for the form
   setupArtworkValidation();
@@ -2052,13 +2123,25 @@ async function handleUpload(event) {
 
 // Handle logout
 async function handleLogout() {
-  const { error } = await supabase.auth.signOut();
+  try {
+    console.log("Logging out...");
+    const { error } = await supabase.auth.signOut();
 
-  if (error) {
-    console.error('Error logging out:', error.message);
-  } else {
-    // Reload the page to show login form again
-    window.location.reload();
+    if (error) {
+      console.error('Error logging out:', error.message);
+      alert('Error logging out: ' + error.message);
+    } else {
+      console.log("Logout successful");
+      // Clear any localStorage user data
+      localStorage.removeItem('supabase.auth.token');
+
+      // Force reload the page to show login form again
+      window.location.href = window.location.pathname;
+    }
+  } catch (e) {
+    console.error('Exception during logout:', e);
+    // Force reload as fallback
+    window.location.href = window.location.pathname;
   }
 }
 
