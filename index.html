@@ -71,12 +71,10 @@ navLight.src = "../assets/cssimg/navLightGreen.gif";
           </dl>
           <h1>Newsletter</h1>
           <p>Join the gmunk mailing list to receive studio updates, press releases, and special promotions.</p>
-          <form name="newsletterSignup"
-            action="https://web.archive.org/web/20040806063337/http://www.newezra.com/xhtml/home/" method="post">
-            <input name="newsletterEmail" type="text" class="newsletterInput" value="Enter Email Address"
-              onfocus="if (this.value == 'Enter Email Address') this.value = '';" size="52" />
-            <input name="isSubmitted" type="hidden" value="true" />
-            <input class="submit" type="submit" name="Submit" value="Submit" />
+          <form action="https://formspree.io/f/movdnvnp" method="POST">
+            <input name="email" type="email" class="newsletterInput" placeholder="enter email address" size="52" required />
+            <input type="hidden" name="message" value="newsletter signup from gmunk site" />
+            <input class="submit" type="submit" value="submit" />
           </form>
         </div>
         <div id="rightColumn">
