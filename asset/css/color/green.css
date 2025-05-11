@@ -1,0 +1,83 @@
+/*
+GREEN = #BFED46
+
+/*--- LAYOUT BASICS ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~---*/
+h3	{
+	margin: 0 5px 0 5px;
+	padding: 0;
+	border: 0;
+	font-size: x-small;
+	font-weight: bold;
+	color: #BFED46;
+}
+h4	{
+	margin: 0 5px 0 5px;
+	padding: 0;
+	border: 0;
+	font-size: x-small;
+	font-weight: normal;
+	color: #BFED46;
+}
+p a:link,
+p a:active,
+p a:visited	{
+	color: #BFED46;
+	text-decoration: underline;
+}
+p a:hover	{
+	color: #FFFFFF;
+}
+.text {
+	margin: 2px 0 6px 3px;
+	padding: 2px 0 0 2px;
+	border: 1px solid #363636;
+	background:  url("../../image/inputTextBg.gif") top left repeat-x;
+	height: 16px;
+	font-size: x-small;
+	font-weight: normal;
+	color: #BFED46;
+}
+.newsletterInput	{
+	margin: 2px 0 6px 3px;
+	padding: 2px 0 0 2px;
+	border: 1px solid #363636;
+	background:  url("../../image/inputTextBg.gif") top left repeat-x;
+	height: 16px;
+	font-size: x-small;
+	font-weight: normal;
+	color: #BFED46;
+	display: block;
+	width: 278px;
+}
+/*--- HEADER ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~---*/
+#header {
+	margin: 0 auto;
+	padding: 0;
+	border: 0;
+	width: 668px;
+	height: 95px;
+	background: #282828 url("../../image/color/logoGreen.gif") top right no-repeat;
+	text-align: left;
+	font-size: 11px;
+}
+/*--- NAVIGATION ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~---*/
+dl dd a:hover	{
+	color: #BFED46;
+	background: url("../../image/buttonBg_upside.gif") top center repeat-x;
+}
+#navigation {
+	padding: 67px 0 0 0;
+	margin: 0;
+	height: 26px;
+	background:  url("../../image/color/logoBelowGreen.gif") bottom left no-repeat;
+	text-align: left;
+	font-size: 11px;	
+	cursor: default;
+}
+#navigation ul li a:hover {
+	padding: 0 0 13px 0;
+	color: #FFFFFF;
+	text-decoration: none;
+	background:  url("../../image/color/navLightGreen.gif") bottom repeat-x;
+	cursor: pointer;
+}
