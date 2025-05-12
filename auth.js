@@ -1672,16 +1672,13 @@ function showLoggedInState(user, isAdmin) {
     // Load user's releases
     loadUserReleases(user.email);
 
-    // Populate account info in Account Settings tab
-    setTimeout(() => {
-      document.getElementById('userEmail').textContent = user.email;
-      document.getElementById('currentEmail').textContent = user.email;
-      document.getElementById('accountType').textContent = 'Artist';
-      document.getElementById('registrationDate').textContent = user.created_at
-        ? new Date(user.created_at).toLocaleDateString()
-        : 'Unknown';
-      // No longer calling setupAccountTab since we removed that functionality
-    }, 100);
+    // Populate account info in Account Settings tab immediately
+    document.getElementById('userEmail').textContent = user.email;
+    document.getElementById('currentEmail').textContent = user.email;
+    document.getElementById('accountType').textContent = 'Artist';
+    document.getElementById('registrationDate').textContent = user.created_at
+      ? new Date(user.created_at).toLocaleDateString()
+      : 'Unknown';
   }
 }
 
