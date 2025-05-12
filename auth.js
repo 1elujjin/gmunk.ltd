@@ -1882,7 +1882,7 @@ async function changeEmail() {
     }
   }
   // Set up track file inputs
-  setupTrackFileUploads();
+  // setupTrackFileUploads();
 }
 
 // Setup track file uploads with styled buttons using submit buttons
