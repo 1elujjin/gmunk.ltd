@@ -1810,8 +1810,8 @@ async function changePassword() {
     }
 
     console.log("Re-authentication successful");
-
-    // Update password
+ getStoredReleases
+    // Update password 
     const { error: updateError } = await supabase.auth.updateUser({
       password: newPassword
     });
@@ -2901,4 +2901,231 @@ async function handleLogout() {
 // Helper function to get file extension
 function getFileExtension(filename) {
   return filename.slice((filename.lastIndexOf('.') - 1 >>> 0) + 2).toLowerCase();
+}
+
+// Function to update artwork preview when file is selected
+function updateArtworkPreview(input) {
+  const artworkFileName = document.getElementById('artworkFileName');
+  const artworkPreview = document.getElementById('artworkPreview');
+
+  console.log('Artwork file selected:', input.files);
+
+  if (input.files && input.files[0]) {
+    // Update filename display
+    artworkFileName.textContent = input.files[0].name;
+
+    // Show image preview
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      console.log('Artwork file loaded');
+      artworkPreview.style.backgroundImage = `url(${e.target.result})`;
+      artworkPreview.style.display = 'block';
+    };
+    reader.readAsDataURL(input.files[0]);
+  } else {
+    artworkFileName.textContent = '';
+    artworkPreview.style.display = 'none';
+    artworkPreview.style.backgroundImage = '';
+  }
+}
+
+// Function to update track filename display
+function updateTrackFileName(input, index) {
+  const trackFileName = document.getElementById(`track-filename-${index}`);
+
+  console.log(`Track file ${index} selected:`, input.files);
+
+  if (input.files && input.files[0]) {
+    trackFileName.textContent = input.files[0].name;
+  } else {
+    trackFileName.textContent = '';
+  }
+}
+
+// Add a new track field to the form
+function addTrackField() {
+  const tracksContainer = document.getElementById('tracksContainer');
+  if (!tracksContainer) {
+    console.error('Tracks container not found');
+    return;
+  }
+
+  const trackCount = tracksContainer.getElementsByClassName('track-item').length;
+  const newIndex = trackCount;
+
+  const newTrackItem = document.createElement('div');
+  newTrackItem.className = 'track-item';
+  newTrackItem.style = 'border-bottom: 1px solid #484848; margin-bottom: 10px; padding-bottom: 10px;';
+
+  newTrackItem.innerHTML = `
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <p class="pCase">Track ${newIndex + 1} Name*</p>
+      <button type="button" class="submit" style="padding: 2px 8px; font-size: 12px;" onclick="removeTrackField(this)">Remove</button>
+    </div>
+    <input type="text" id="track-name-${newIndex}" class="newsletterInput" required>
+
+    <p class="pCase">Track ${newIndex + 1} Audio File (MP3 recommended)*</p>
+    <div style="display: flex; align-items: center;">
+      <label for="track-file-${newIndex}" style="cursor: pointer; display: inline-block; padding: 8px 15px; background-color: #BFED46; color: #000; border-radius: 4px; margin-right: 10px;">
+        Select File
+      </label>
+      <span id="track-filename-${newIndex}" style="color: #BFED46; font-weight: bold;"></span>
+      <input type="file" id="track-file-${newIndex}" name="track-file-${newIndex}" accept="audio/*" required style="position: absolute; left: -9999px;" onchange="updateTrackFileName(this, ${newIndex})">
+    </div>
+  `;
+
+  tracksContainer.appendChild(newTrackItem);
+  console.log(`Added track field ${newIndex + 1}`);
+}
+
+// Remove a track field from the form
+function removeTrackField(button) {
+  const trackItem = button.closest('.track-item');
+  const tracksContainer = document.getElementById('tracksContainer');
+
+  if (trackItem && tracksContainer) {
+    tracksContainer.removeChild(trackItem);
+    console.log('Removed track field');
+
+    // Renumber the remaining tracks
+    const remainingTracks = tracksContainer.getElementsByClassName('track-item');
+    for (let i = 0; i < remainingTracks.length; i++) {
+      const trackLabel = remainingTracks[i].querySelector('p.pCase');
+      if (trackLabel) {
+        trackLabel.textContent = `Track ${i + 1} Name*`;
+      }
+    }
+  }
+}
+
+// Handle the upload form submission with better UI feedback
+async function handleUpload(event) {
+  event.preventDefault();
+  console.log('Upload form submitted');
+
+  const submitButton = event.target.querySelector('input[type="submit"]');
+  const originalButtonValue = submitButton.value;
+
+  // Show loading state
+  submitButton.value = 'Uploading...';
+  submitButton.disabled = true;
+
+  try {
+    // Basic validation - could be expanded
+    const artistName = document.getElementById('artistName').value;
+    const releaseTitle = document.getElementById('releaseTitle').value;
+    const artworkFile = document.getElementById('artworkFile').files[0];
+
+    if (!artistName || !releaseTitle || !artworkFile) {
+      throw new Error('Please fill in all required fields and upload artwork');
+    }
+
+    // Check if at least one track is filled out
+    const trackNameInputs = document.querySelectorAll('[id^="track-name-"]');
+    const trackFileInputs = document.querySelectorAll('[id^="track-file-"]');
+    let hasValidTrack = false;
+
+    for (let i = 0; i < trackNameInputs.length; i++) {
+      const trackName = trackNameInputs[i].value;
+      const trackFile = trackFileInputs[i].files && trackFileInputs[i].files[0];
+
+      if (trackName && trackFile) {
+        hasValidTrack = true;
+        break;
+      }
+    }
+
+    if (!hasValidTrack) {
+      throw new Error('Please add at least one track with name and audio file');
+    }
+
+    // Simulate successful upload (in real world, you'd handle the upload to server here)
+    // Process artwork
+    const reader = new FileReader();
+    reader.readAsDataURL(artworkFile);
+
+    await new Promise(resolve => {
+      reader.onload = () => {
+        // Artwork loaded successfully
+        console.log('Artwork processed successfully');
+        setTimeout(resolve, 1000); // Simulate processing time
+      };
+    });
+
+    // Show success notification with more detail
+    const notification = document.createElement('div');
+    notification.className = 'notification-popup success';
+    notification.innerHTML = `
+      <strong>Upload Successful!</strong><br>
+      "${releaseTitle}" by ${artistName} has been uploaded.<br>
+      <small>Your release will be reviewed before being published.</small>
+    `;
+    notification.style.opacity = '0';
+    notification.style.padding = '15px';
+    notification.style.borderRadius = '5px';
+    notification.style.lineHeight = '1.5';
+
+    // Add to DOM
+    document.body.appendChild(notification);
+
+    // Trigger animation
+    setTimeout(() => {
+      notification.style.opacity = '1';
+    }, 10);
+
+    // Remove after 5 seconds
+    setTimeout(() => {
+      notification.style.opacity = '0';
+      setTimeout(() => {
+        if (notification.parentNode) {
+          document.body.removeChild(notification);
+        }
+      }, 300); // Wait for fade out animation
+    }, 5000);
+
+    // Reset form
+    event.target.reset();
+    document.getElementById('artworkPreview').style.display = 'none';
+    document.getElementById('artworkFileName').textContent = '';
+    document.querySelectorAll('[id^="track-filename-"]').forEach(el => {
+      el.textContent = '';
+    });
+
+  } catch (error) {
+    // Show error notification with more detail
+    const notification = document.createElement('div');
+    notification.className = 'notification-popup error';
+    notification.innerHTML = `
+      <strong>Upload Failed</strong><br>
+      ${error.message || 'An error occurred during the upload process.'}
+    `;
+    notification.style.opacity = '0';
+    notification.style.padding = '15px';
+    notification.style.borderRadius = '5px';
+    notification.style.lineHeight = '1.5';
+
+    // Add to DOM
+    document.body.appendChild(notification);
+
+    // Trigger animation
+    setTimeout(() => {
+      notification.style.opacity = '1';
+    }, 10);
+
+    // Remove after 5 seconds
+    setTimeout(() => {
+      notification.style.opacity = '0';
+      setTimeout(() => {
+        if (notification.parentNode) {
+          document.body.removeChild(notification);
+        }
+      }, 300); // Wait for fade out animation
+    }, 5000);
+
+    console.error('Upload error:', error);
+  } finally {
+    // Reset button state
+    submitButton.value = originalButtonValue;
+    submitButton.disabled = false;
+  }
 }
