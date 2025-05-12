@@ -1612,7 +1612,7 @@ function showLoggedInState(user, isAdmin) {
                 <div id="changeEmailForm">
                   <div style="margin-bottom: 10px;">
                     <p class="pCase">Current Email</p>
-                    <p id="currentEmail" style="padding: 5px 0; color: #BFED46;"></p>
+                    <p id="currentEmail" style="padding: 5px 0; color: #BFED46; font-weight: bold;"></p>
                   </div>
                   <div style="margin-bottom: 10px;">
                     <p class="pCase">New Email*</p>
@@ -1655,9 +1655,9 @@ function showLoggedInState(user, isAdmin) {
               <div style="background: #484848; border: 1px solid #666; padding: 15px;">
                 <h3 class="pCase" style="margin-top: 0;">Account Information</h3>
                 <div id="accountInfo">
-                  <p><strong>Email:</strong> <span id="userEmail"></span></p>
-                  <p><strong>Account Type:</strong> <span id="accountType"></span></p>
-                  <p><strong>Registered:</strong> <span id="registrationDate"></span></p>
+                  <p><strong>Email:</strong> <span id="userEmail" style="color: #BFED46; font-weight: bold;"></span></p>
+                  <p><strong>Account Type:</strong> <span id="accountType" style="color: #BFED46; font-weight: bold;"></span></p>
+                  <p><strong>Registered:</strong> <span id="registrationDate" style="color: #BFED46; font-weight: bold;"></span></p>
                 </div>
               </div>
             </div>
@@ -1672,33 +1672,24 @@ function showLoggedInState(user, isAdmin) {
     // Load user's releases
     loadUserReleases(user.email);
 
-    // Populate account info in Account Settings tab immediately
-    // Make sure to set these values when showing the logged in state
-    try {
-      const userEmailElements = document.querySelectorAll('#userEmail, #currentEmail');
-      userEmailElements.forEach(elem => {
-        if (elem) elem.textContent = user.email || 'Not available';
+    // Initial population of account information will happen when the account tab is shown
+    console.log('User logged in with email:', user.email);
+
+    // Force a switch to account tab to initialize it (then switch back to default)
+    setTimeout(() => {
+      // This will initialize all the account data
+      showTab('account').then(() => {
+        // Then switch back to the default upload tab
+        showTab('upload');
       });
-
-      const accountTypeElem = document.getElementById('accountType');
-      if (accountTypeElem) accountTypeElem.textContent = 'Artist';
-
-      const registrationDateElem = document.getElementById('registrationDate');
-      if (registrationDateElem) {
-        registrationDateElem.textContent = user.created_at
-          ? new Date(user.created_at).toLocaleDateString()
-          : 'Unknown';
-      }
-
-      console.log('User account info populated for:', user.email);
-    } catch (err) {
-      console.error('Error populating user info:', err);
-    }
+    }, 100);
   }
 }
 
 // Function to show tab content in artist dashboard
-function showTab(tabName) {
+async function showTab(tabName) {
+  console.log(`Showing tab: ${tabName}`);
+
   // Update tab buttons
   const tabs = document.querySelectorAll('#dashboard-nav dd a');
   tabs.forEach(tab => {
@@ -1724,6 +1715,44 @@ function showTab(tabName) {
     // If it's the upload tab, make sure we have the upload form
     if (tabName === 'upload') {
       setupUploadForm();
+    }
+
+    // If it's the account tab, populate the account information
+    if (tabName === 'account') {
+      // Get current user information
+      try {
+        const { data, error } = await supabase.auth.getUser();
+        if (error) {
+          console.error('Error getting user:', error);
+          return;
+        }
+
+        if (data && data.user) {
+          const user = data.user;
+          console.log('Populating account info for tab switch:', user.email);
+
+          // Update all fields with user information
+          const userEmailElements = document.querySelectorAll('#userEmail, #currentEmail');
+          userEmailElements.forEach(elem => {
+            if (elem) {
+              elem.textContent = user.email;
+              console.log(`Updated email element to: ${user.email}`);
+            }
+          });
+
+          const accountTypeElem = document.getElementById('accountType');
+          if (accountTypeElem) accountTypeElem.textContent = 'Artist';
+
+          const registrationDateElem = document.getElementById('registrationDate');
+          if (registrationDateElem) {
+            registrationDateElem.textContent = user.created_at
+              ? new Date(user.created_at).toLocaleDateString()
+              : 'Unknown';
+          }
+        }
+      } catch (err) {
+        console.error('Error in account tab:', err);
+      }
     }
   }
 }
