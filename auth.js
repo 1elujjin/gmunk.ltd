@@ -7,6 +7,39 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 // initialize the client
 const supabase = (typeof window !== 'undefined') ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
+// Function to show notifications instead of alerts
+function showNotification(message, type = 'info', duration = 4000) {
+  // Remove any existing notifications
+  const existingNotifications = document.querySelectorAll('.notification-popup');
+  existingNotifications.forEach(notification => {
+    document.body.removeChild(notification);
+  });
+
+  // Create new notification element
+  const notification = document.createElement('div');
+  notification.className = `notification-popup ${type}`;
+  notification.textContent = message;
+  notification.style.opacity = '0';
+
+  // Add to DOM
+  document.body.appendChild(notification);
+
+  // Trigger animation
+  setTimeout(() => {
+    notification.style.opacity = '1';
+  }, 10);
+
+  // Remove after duration
+  setTimeout(() => {
+    notification.style.opacity = '0';
+    setTimeout(() => {
+      if (notification.parentNode) {
+        document.body.removeChild(notification);
+      }
+    }, 300); // Wait for fade out animation
+  }, duration);
+}
+
 // Track if we're in review mode to add ESC key functionality
 let inReviewMode = false;
 
@@ -40,7 +73,7 @@ function dataURLtoBlob(dataURL) {
 // Function to download artwork
 function downloadArtwork(artworkDataUrl, artistName, releaseTitle) {
   if (!artworkDataUrl) {
-    alert('No artwork available to download.');
+    showNotification('No artwork available to download.', 'error');
     return;
   }
 
@@ -263,7 +296,7 @@ async function approveRelease(releaseId) {
 
     if (!releases || releases.length === 0) {
       console.error('Release not found for approval');
-      alert('Release not found. Cannot approve.');
+      showNotification('Release not found. Cannot approve.', 'error');
       return;
     }
 
@@ -287,7 +320,7 @@ async function approveRelease(releaseId) {
 
     // Reload the pending releases to update the UI
     await loadPendingReleases();
-    alert('Release has been approved successfully.');
+    showNotification('Release has been approved successfully.', 'success');
   } catch (e) {
     console.error('Error in approve process:', e);
     // Try fallback method
@@ -315,10 +348,10 @@ async function fallbackApproveRelease(releaseId) {
     // Reload the admin dashboard
     loadPendingReleases();
 
-    alert('Release has been approved (using fallback method).');
+    showNotification('Release has been approved (using fallback method).', 'success');
   } catch (e) {
     console.error('Fallback approval failed:', e);
-    alert('Failed to approve release. Please try again.');
+    showNotification('Failed to approve release. Please try again.', 'error');
   }
 }
 
@@ -343,7 +376,7 @@ async function rejectRelease(releaseId) {
 
     if (!releases || releases.length === 0) {
       console.error('Release not found for rejection');
-      alert('Release not found. Cannot reject.');
+      showNotification('Release not found. Cannot reject.', 'error');
       return;
     }
 
@@ -367,7 +400,7 @@ async function rejectRelease(releaseId) {
 
     // Reload the pending releases to update the UI
     await loadPendingReleases();
-    alert('Release has been rejected.');
+    showNotification('Release has been rejected.', 'success');
   } catch (e) {
     console.error('Error in reject process:', e);
     // Try fallback method
@@ -395,10 +428,10 @@ async function fallbackRejectRelease(releaseId) {
     // Reload the admin dashboard
     loadPendingReleases();
 
-    alert('Release has been rejected (using fallback method).');
+    showNotification('Release has been rejected (using fallback method).', 'success');
   } catch (e) {
     console.error('Fallback rejection failed:', e);
-    alert('Failed to reject release. Please try again.');
+    showNotification('Failed to reject release. Please try again.', 'error');
   }
 }
 
@@ -438,7 +471,7 @@ async function initializeStorage() {
     if (tableCheckError && tableCheckError.code === '42P01') {
       console.error('Releases table does not exist. Please create it in the Supabase dashboard.');
       // We can't create tables via the JS client, so we'll display instructions
-      alert('The releases table needs to be created in your Supabase project. Please check the console for instructions.');
+      showNotification('The releases table needs to be created in your Supabase project. Please check the console for instructions.', 'error', 8000);
       console.log('INSTRUCTIONS: Create a table named "releases" in your Supabase dashboard with columns matching the structure of the release object.');
     }
   } catch (err) {
@@ -697,7 +730,7 @@ async function deleteRelease(releaseId) {
 
       if (error) {
         console.error('Error deleting release from Supabase:', error.message);
-        alert('Error deleting release from database.');
+        showNotification('Error deleting release from database.', 'error');
       } else {
         // Reload the current view
         const pendingTab = document.getElementById('pending-tab');
@@ -706,11 +739,11 @@ async function deleteRelease(releaseId) {
         } else {
           loadAllReleases();
         }
-        alert('Release has been permanently deleted.');
+        showNotification('Release has been permanently deleted.', 'success');
       }
     } catch (e) {
       console.error('Error deleting release:', e);
-      alert('Error deleting release.');
+      showNotification('Error deleting release.', 'error');
     }
   }
 }
@@ -769,7 +802,7 @@ async function showReleaseReview(release) {
         const releases = await getStoredReleases();
         release = releases.find(r => r.id === release);
         if (!release) {
-            alert('Release not found');
+            showNotification('Release not found', 'error');
             return;
         }
     }
@@ -782,7 +815,7 @@ async function showReleaseReview(release) {
     const overlay = document.getElementById('reviewModalOverlay');
     const reviewContent = document.getElementById('reviewContent');
     if (!overlay || !reviewContent) {
-        alert('Modal not found in DOM.');
+        showNotification('Modal not found in DOM.', 'error');
         return;
     }
 
@@ -1046,19 +1079,19 @@ async function showEditForm(releaseId) {
 
     if (error) {
       console.error('Error fetching release details:', error.message);
-      alert('Failed to fetch release details.');
+      showNotification('Failed to fetch release details.', 'error');
       return;
     }
 
     const release = releases[0];
     if (!release) {
-      alert('Release not found.');
+      showNotification('Release not found.', 'error');
       return;
     }
 
     const editContainer = document.getElementById(`editContainer-${releaseId}`);
     if (!editContainer) {
-      alert('Edit container not found.');
+      showNotification('Edit container not found.', 'error');
       return;
     }
 
@@ -1108,7 +1141,7 @@ async function showEditForm(releaseId) {
     editContainer.style.display = 'block';
   } catch (e) {
     console.error('Error displaying edit form:', e);
-    alert('An error occurred while trying to edit the release.');
+    showNotification('An error occurred while trying to edit the release.', 'error');
   }
 }
 
@@ -1126,7 +1159,7 @@ async function updateRelease(event, releaseId) {
 
     if (fetchError || !releases || releases.length === 0) {
       console.error('Error fetching release:', fetchError?.message);
-      alert('Release not found.');
+      showNotification('Release not found.', 'error');
       return;
     }
 
@@ -1154,7 +1187,7 @@ async function updateRelease(event, releaseId) {
 
     if (updateError) {
       console.error('Error updating release:', updateError.message);
-      alert('Failed to update release.');
+      showNotification('Failed to update release.', 'error');
       return;
     }
 
@@ -1168,10 +1201,10 @@ async function updateRelease(event, releaseId) {
     const userEmail = updatedRelease.submittedBy;
     await loadUserReleases(userEmail);
 
-    alert('Release has been updated.');
+    showNotification('Release has been updated.', 'success');
   } catch (e) {
     console.error('Error updating release:', e);
-    alert('An error occurred while updating the release.');
+    showNotification('An error occurred while updating the release.', 'error');
   }
 }
 
@@ -1214,14 +1247,12 @@ async function requestDeletion(releaseId) {
       // Reload user's releases
       const user = await supabase.auth.getUser();
       loadUserReleases(user.data.user.email);
-      alert('Deletion request has been submitted.');
+      showNotification('Deletion request has been submitted.', 'success');
     } else {
-      alert('Failed to request deletion.');
+      showNotification('Failed to request deletion.', 'error');
     }
   }
 }
-
-// ... rest of the code remains unchanged ...
 
 // Handle page load
 document.addEventListener('DOMContentLoaded', function() {
@@ -1468,6 +1499,7 @@ function showLoggedInState(user, isAdmin) {
               <dd style="margin: 0 0 10px 0;"><a href="#" onclick="showTab('releases'); return false;" class="tab-btn">Your Releases</a></dd>
               <dd style="margin: 0 0 10px 0;"><a href="#" onclick="showTab('tickets'); return false;" class="tab-btn">Support Tickets</a></dd>
               <dd style="margin: 0 0 10px 0;"><a href="#" onclick="showTab('payouts'); return false;" class="tab-btn">Payouts & Finance</a></dd>
+              <dd style="margin: 0 0 10px 0;"><a href="#" onclick="showTab('account'); return false;" class="tab-btn">Account Settings</a></dd>
             </dl>
           </div>
 
@@ -1568,6 +1600,42 @@ function showLoggedInState(user, isAdmin) {
               </div>
             </div>
           </div>
+
+          <div id="account-tab" class="tab-content" style="display: none;">
+            <h2 class="pCase" style="margin-top: 0;">Account Settings</h2>
+            <div class="dispBoxLeft" style="border: none; padding: 0;">
+              <div style="background: #484848; border: 1px solid #666; padding: 15px; margin-bottom: 20px;">
+                <h3 class="pCase" style="margin-top: 0;">Change Password</h3>
+                <div id="changePasswordForm">
+                  <div style="margin-bottom: 10px;">
+                    <p class="pCase">Current Password*</p>
+                    <input type="password" id="currentPassword" class="newsletterInput" required>
+                  </div>
+                  <div style="margin-bottom: 10px;">
+                    <p class="pCase">New Password*</p>
+                    <input type="password" id="newPassword" class="newsletterInput" required>
+                    <p style="font-size: x-small; margin-top: 3px; color: #999;">Must be at least 6 characters long</p>
+                  </div>
+                  <div style="margin-bottom: 10px;">
+                    <p class="pCase">Confirm New Password*</p>
+                    <input type="password" id="confirmPassword" class="newsletterInput" required>
+                  </div>
+                  <div style="text-align: right; margin-top: 15px;">
+                    <input type="button" value="Update Password" class="submit" onclick="changePassword()">
+                  </div>
+                </div>
+              </div>
+
+              <div style="background: #484848; border: 1px solid #666; padding: 15px;">
+                <h3 class="pCase" style="margin-top: 0;">Account Information</h3>
+                <div id="accountInfo">
+                  <p><strong>Email:</strong> <span id="userEmail">Loading...</span></p>
+                  <p><strong>Account Type:</strong> <span id="accountType">Loading...</span></p>
+                  <p><strong>Registered:</strong> <span id="registrationDate">Loading...</span></p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     `;
@@ -1577,6 +1645,16 @@ function showLoggedInState(user, isAdmin) {
 
     // Load user's releases
     loadUserReleases(user.email);
+
+    // Populate account info in Account Settings tab
+    setTimeout(() => {
+      document.getElementById('userEmail').textContent = user.email;
+      document.getElementById('accountType').textContent = 'Artist';
+      document.getElementById('registrationDate').textContent = user.created_at
+        ? new Date(user.created_at).toLocaleDateString()
+        : 'Unknown';
+    }, 100);
+
   }
 }
 
@@ -1611,6 +1689,66 @@ function showTab(tabName) {
   }
 }
 
+// Change password functionality
+async function changePassword() {
+  const currentPassword = document.getElementById('currentPassword').value;
+  const newPassword = document.getElementById('newPassword').value;
+  const confirmPassword = document.getElementById('confirmPassword').value;
+
+  if (!currentPassword || !newPassword || !confirmPassword) {
+    showNotification('Please fill in all password fields.', 'error');
+    return;
+  }
+
+  if (newPassword.length < 6) {
+    showNotification('New password must be at least 6 characters long.', 'error');
+    return;
+  }
+
+  if (newPassword !== confirmPassword) {
+    showNotification('New passwords do not match.', 'error');
+    return;
+  }
+
+  try {
+    // Get current user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      showNotification('Could not get user session. Please log in again.', 'error');
+      return;
+    }
+
+    // Re-authenticate user with current password
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: user.email,
+      password: currentPassword
+    });
+
+    if (signInError) {
+      showNotification('Current password is incorrect.', 'error');
+      return;
+    }
+
+    // Update password
+    const { error: updateError } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+
+    if (updateError) {
+      showNotification('Failed to update password: ' + updateError.message, 'error');
+      return;
+    }
+
+    showNotification('Password updated successfully!', 'success');
+    document.getElementById('currentPassword').value = '';
+    document.getElementById('newPassword').value = '';
+    document.getElementById('confirmPassword').value = '';
+  } catch (e) {
+    showNotification('An error occurred while updating password.', 'error');
+    console.error(e);
+  }
+}
+
 // Support ticket functions
 function showNewTicketForm() {
   document.getElementById('newTicketForm').style.display = 'block';
@@ -1621,7 +1759,7 @@ function hideNewTicketForm() {
 }
 
 function submitTicket() {
-  alert('This feature is not yet implemented.');
+  showNotification('This feature is not yet implemented.', 'info');
   hideNewTicketForm();
 }
 
@@ -2277,7 +2415,7 @@ async function handleUpload(event) {
       await saveReleasesToStorage(existingReleases);
     }
 
-    alert('Release submitted for approval!');
+    showNotification('Release submitted for approval!', 'success');
     document.getElementById('uploadForm').reset();
 
     // Clear the artwork preview
@@ -2299,7 +2437,7 @@ async function handleUpload(event) {
     }
   } catch (error) {
     console.error('Upload error:', error);
-    alert('Error: ' + error.message);
+    showNotification('Error: ' + error.message, 'error');
   } finally {
     // Reset button state
     submitBtn.value = originalBtnValue;
@@ -2315,7 +2453,7 @@ async function handleLogout() {
 
     if (error) {
       console.error('Error logging out:', error.message);
-      alert('Error logging out: ' + error.message);
+      showNotification('Error logging out: ' + error.message, 'error');
     } else {
       console.log("Logout successful");
       // Clear any localStorage user data
