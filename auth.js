@@ -2073,6 +2073,169 @@ async function handleUpload(event) {
   setTimeout(() => {
     showNotification('Release submitted successfully!', 'success');
   }, 1500);
+}
+
+// Function to set up the upload form with proper file input handling
+function setupUploadForm() {
+  console.log('Setting up upload form');
+  const uploadForm = document.getElementById('uploadForm');
+
+  if (!uploadForm) {
+    console.error('Upload form not found');
+    return;
+  }
+
+  // Clear any existing form content to avoid duplication
+  uploadForm.innerHTML = `
+    <div style="margin-bottom: 20px;">
+      <div style="margin-bottom: 15px;">
+        <p class="pCase">Artist Name*</p>
+        <input type="text" id="artistName" class="newsletterInput" required>
+      </div>
+
+      <div style="margin-bottom: 15px;">
+        <p class="pCase">Release Title*</p>
+        <input type="text" id="releaseTitle" class="newsletterInput" required>
+      </div>
+
+      <div style="margin-bottom: 15px;">
+        <p class="pCase">Release Type*</p>
+        <select id="releaseType" class="newsletterInput" required style="background-color: #5D5D5D; color: #fff; width: 278px; appearance: menulist; -webkit-appearance: menulist;">
+          <option value="single">Single</option>
+          <option value="ep">EP</option>
+          <option value="album">Album</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom: 15px;">
+        <p class="pCase">Artwork (1400x1400px JPG recommended)*</p>
+        <div style="display: flex; align-items: center;">
+          <label for="artworkFile" style="cursor: pointer; display: inline-block; padding: 8px 15px; background-color: #BFED46; color: #000; border-radius: 4px; margin-right: 10px;">
+            Select File
+          </label>
+          <span id="artworkFileName" style="color: #BFED46;"></span>
+          <input type="file" id="artworkFile" accept="image/*" required style="position: absolute; left: -9999px;">
+        </div>
+        <div id="artworkPreview" style="width: 100px; height: 100px; border: 2px solid #484848; margin-top: 10px; display: none; background-position: center; background-size: cover;"></div>
+      </div>
+
+      <!-- Track Upload Section -->
+      <div style="margin-bottom: 15px;">
+        <h3 class="pCase">Track Information</h3>
+        <div id="tracksContainer">
+          <div class="track-item" style="border-bottom: 1px solid #484848; margin-bottom: 10px; padding-bottom: 10px;">
+            <p class="pCase">Track 1 Name*</p>
+            <input type="text" id="track-name-0" class="newsletterInput" required>
+
+            <p class="pCase">Track 1 Audio File (MP3 recommended)*</p>
+            <div style="display: flex; align-items: center;">
+              <label for="track-file-0" style="cursor: pointer; display: inline-block; padding: 8px 15px; background-color: #BFED46; color: #000; border-radius: 4px; margin-right: 10px;">
+                Select File
+              </label>
+              <span id="track-filename-0" style="color: #BFED46;"></span>
+              <input type="file" id="track-file-0" accept="audio/*" required style="position: absolute; left: -9999px;">
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: 10px;">
+          <input type="button" value="+ Add Track" onclick="addTrackField()" class="submit">
+        </div>
+      </div>
+
+      <div style="text-align: right; margin-top: 20px;">
+        <input type="submit" value="Submit Release" class="submit">
+      </div>
+    </div>
+  `;
+
+  // Set up file input listeners for artwork
+  const artworkFileInput = document.getElementById('artworkFile');
+  const artworkFileName = document.getElementById('artworkFileName');
+  const artworkPreview = document.getElementById('artworkPreview');
+
+  if (artworkFileInput && artworkFileName) {
+    artworkFileInput.addEventListener('change', function() {
+      if (this.files.length > 0) {
+        artworkFileName.textContent = this.files[0].name;
+
+        // Show image preview
+        if (artworkPreview) {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            artworkPreview.style.backgroundImage = `url(${e.target.result})`;
+            artworkPreview.style.display = 'block';
+          };
+          reader.readAsDataURL(this.files[0]);
+        }
+      } else {
+        artworkFileName.textContent = '';
+        if (artworkPreview) {
+          artworkPreview.style.display = 'none';
+          artworkPreview.style.backgroundImage = '';
+        }
+      }
+    });
+  }
+
+  // Set up file input listener for the first track
+  setupTrackFileInput(0);
+}
+
+// Setup event listener for a track file input
+function setupTrackFileInput(index) {
+  const trackFileInput = document.getElementById(`track-file-${index}`);
+  const trackFileName = document.getElementById(`track-filename-${index}`);
+
+  if (trackFileInput && trackFileName) {
+    trackFileInput.addEventListener('change', function() {
+      if (this.files.length > 0) {
+        trackFileName.textContent = this.files[0].name;
+      } else {
+        trackFileName.textContent = '';
+      }
+    });
+  }
+}
+
+// Add a new track field to the form
+function addTrackField() {
+  const tracksContainer = document.getElementById('tracksContainer');
+  const trackCount = tracksContainer.getElementsByClassName('track-item').length;
+
+  const newTrackItem = document.createElement('div');
+  newTrackItem.className = 'track-item';
+  newTrackItem.style = 'border-bottom: 1px solid #484848; margin-bottom: 10px; padding-bottom: 10px;';
+
+  newTrackItem.innerHTML = `
+    <p class="pCase">Track ${trackCount + 1} Name*</p>
+    <input type="text" id="track-name-${trackCount}" class="newsletterInput" required>
+
+    <p class="pCase">Track ${trackCount + 1} Audio File (MP3 recommended)*</p>
+    <div style="display: flex; align-items: center;">
+      <label for="track-file-${trackCount}" style="cursor: pointer; display: inline-block; padding: 8px 15px; background-color: #BFED46; color: #000; border-radius: 4px; margin-right: 10px;">
+        Select File
+      </label>
+      <span id="track-filename-${trackCount}" style="color: #BFED46;"></span>
+      <input type="file" id="track-file-${trackCount}" accept="audio/*" required style="position: absolute; left: -9999px;">
+    </div>
+  `;
+
+  tracksContainer.appendChild(newTrackItem);
+  setupTrackFileInput(trackCount);
+}
+
+// Handle the upload form submission
+async function handleUpload(event) {
+  event.preventDefault();
+
+  // Implementation of upload handling would go here
+  showNotification('Upload feature is not fully implemented in this demo.', 'info');
+
+  // For demo purposes, show a success message
+  setTimeout(() => {
+    showNotification('Release submitted successfully!', 'success');
+  }, 1500);
   // Set up track file inputs
   // setupTrackFileUploads();
 }
