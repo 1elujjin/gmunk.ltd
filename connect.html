@@ -63,7 +63,7 @@ navLight.src = "../assets/cssimg/navLightYellow.gif";
             <input class="text" name="infoEmail" type="text" value=""
               onfocus="if (this.value == 'Please Enter Valid Email') this.value = '';" size="65" />
             <h3>Questions / Comments:</h3>
-            <textarea name="infoComments" cols="60" rows="4" class="area"
+            <textarea name="infoComments" cols="44" rows="4" class="area"
               onfocus="if (this.value == 'Please Enter Comments / Questions') this.value = '';"></textarea>
             <input name="infoIsSubmitted" type="hidden" value="true" />
             <input class="submit" type="submit" name="Submit" value="Submit Request" />
@@ -89,7 +89,26 @@ navLight.src = "../assets/cssimg/navLightYellow.gif";
             <input class="submit" type="submit" value="Submit" />
           </form>
 
-          <p id="thanksMessage" style="color: #d9ff00; display: none;">Thank you!</p>
+          <p id="thanksMessage" style="color: #E8F51C; display: none;">Thank you!</p>
+
+          <script>
+          document.getElementById('newsletterForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+
+            const response = await fetch('https://formspree.io/f/movdnvnp', {
+              method: 'POST',
+              headers: { 'Accept': 'application/json' },
+              body: formData
+            });
+
+            if (response.ok) {
+              form.style.display = 'none';
+              document.getElementById('thanksMessage').style.display = 'block';
+            }
+          });
+          </script>
 
           <script>
           document.getElementById('newsletterForm').addEventListener('submit', async function (e) {
