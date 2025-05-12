@@ -1612,7 +1612,7 @@ function showLoggedInState(user, isAdmin) {
                 <div id="changeEmailForm">
                   <div style="margin-bottom: 10px;">
                     <p class="pCase">Current Email</p>
-                    <p id="currentEmail" style="padding: 5px 0;"></p>
+                    <p id="currentEmail" style="padding: 5px 0; color: #BFED46;"></p>
                   </div>
                   <div style="margin-bottom: 10px;">
                     <p class="pCase">New Email*</p>
@@ -1673,12 +1673,27 @@ function showLoggedInState(user, isAdmin) {
     loadUserReleases(user.email);
 
     // Populate account info in Account Settings tab immediately
-    document.getElementById('userEmail').textContent = user.email;
-    document.getElementById('currentEmail').textContent = user.email;
-    document.getElementById('accountType').textContent = 'Artist';
-    document.getElementById('registrationDate').textContent = user.created_at
-      ? new Date(user.created_at).toLocaleDateString()
-      : 'Unknown';
+    // Make sure to set these values when showing the logged in state
+    try {
+      const userEmailElements = document.querySelectorAll('#userEmail, #currentEmail');
+      userEmailElements.forEach(elem => {
+        if (elem) elem.textContent = user.email || 'Not available';
+      });
+
+      const accountTypeElem = document.getElementById('accountType');
+      if (accountTypeElem) accountTypeElem.textContent = 'Artist';
+
+      const registrationDateElem = document.getElementById('registrationDate');
+      if (registrationDateElem) {
+        registrationDateElem.textContent = user.created_at
+          ? new Date(user.created_at).toLocaleDateString()
+          : 'Unknown';
+      }
+
+      console.log('User account info populated for:', user.email);
+    } catch (err) {
+      console.error('Error populating user info:', err);
+    }
   }
 }
 
@@ -1799,12 +1814,21 @@ async function changePassword() {
 async function changeEmail() {
   const newEmail = document.getElementById('newEmail').value;
   const password = document.getElementById('emailChangePassword').value;
-  const currentEmail = document.getElementById('currentEmail').textContent;
+  const currentEmailElement = document.getElementById('currentEmail');
+  const currentEmail = currentEmailElement ? currentEmailElement.textContent : '';
+
+  console.log('Current email from element:', currentEmail);
+
+  if (!currentEmail) {
+    showNotification('Unable to determine your current email. Please try logging in again.', 'error');
+    return;
+  }
 
   if (!newEmail || !password) {
     showNotification('Please fill in all fields.', 'error');
     return;
   }
+
   if (newEmail === currentEmail) {
     showNotification('New email must be different.', 'error');
     return;
@@ -1857,7 +1881,6 @@ async function changeEmail() {
       updateBtn.value = 'Update Email';
     }
   }
-
   // Set up track file inputs
   setupTrackFileUploads();
 }
