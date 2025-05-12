@@ -193,6 +193,12 @@ function downloadAudioFile(trackName, artistName, fileName = null, audioUrl = nu
   }
 }
 
+// Helper to get file extension
+function getFileExtension(filename) {
+  const parts = filename.split('.');
+  return parts.length > 1 ? parts.pop() : 'mp3';
+}
+
 // Function to get releases from Supabase instead of localStorage
 async function getStoredReleases() {
   try {
@@ -1600,29 +1606,6 @@ function showLoggedInState(user, isAdmin) {
           <div id="account-tab" class="tab-content" style="display: none;">
             <h2 class="pCase" style="margin-top: 0;">Account Settings</h2>
             <div class="dispBoxLeft" style="border: none; padding: 0;">
-              <!-- Profile Information -->
-              <div style="background: #484848; border: 1px solid #666; padding: 15px; margin-bottom: 20px; display: flex; align-items: flex-start;">
-                <div style="flex: 0 0 120px; margin-right: 20px;">
-                  <div id="profileImageContainer" style="width: 120px; height: 120px; background: #333; border: 1px solid #555; overflow: hidden; position: relative;">
-                    <img id="profileImage" src="asset/image/default-profile.png" alt="Profile" style="width: 100%; height: 100%; object-fit: cover;">
-                    <div id="profileImageOverlay" style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; text-align: center; padding: 4px; cursor: pointer; font-size: 10px;">
-                      Change Photo
-                    </div>
-                  </div>
-                  <input type="file" id="profileImageUpload" style="display: none;" accept="image/*">
-                </div>
-                <div style="flex: 1;">
-                  <h3 class="pCase" style="margin-top: 0;">Profile Information</h3>
-                  <div style="margin-bottom: 10px;">
-                    <p class="pCase">Artist Name</p>
-                    <input type="text" id="artistNameInput" class="newsletterInput">
-                  </div>
-                  <div style="text-align: right; margin-top: 10px;">
-                    <input type="button" value="Update Profile" class="submit" onclick="updateProfile()">
-                  </div>
-                </div>
-              </div>
-
               <!-- Email Change Section -->
               <div style="background: #484848; border: 1px solid #666; padding: 15px; margin-bottom: 20px;">
                 <h3 class="pCase" style="margin-top: 0;">Change Email</h3>
@@ -1668,18 +1651,6 @@ function showLoggedInState(user, isAdmin) {
                 </div>
               </div>
 
-              <!-- Two-Factor Authentication -->
-              <div style="background: #484848; border: 1px solid #666; padding: 15px; margin-bottom: 20px;">
-                <h3 class="pCase" style="margin-top: 0;">Two-Factor Authentication</h3>
-                <div id="twoFactorAuth">
-                  <p style="margin-bottom: 10px;">Enhance your account security by enabling two-factor authentication.</p>
-                  <div style="background: #5D5D5D; padding: 10px; margin: 10px 0; border: 1px solid #666;">
-                    <p style="color: #BFED46;">Coming Soon</p>
-                    <p style="margin-top: 5px;">Two-factor authentication is currently under development and will be available soon.</p>
-                  </div>
-                </div>
-              </div>
-
               <!-- Account Information -->
               <div style="background: #484848; border: 1px solid #666; padding: 15px;">
                 <h3 class="pCase" style="margin-top: 0;">Account Information</h3>
@@ -1704,22 +1675,17 @@ function showLoggedInState(user, isAdmin) {
     // Populate account info in Account Settings tab
     setTimeout(() => {
       document.getElementById('userEmail').textContent = user.email;
+      document.getElementById('currentEmail').textContent = user.email;
       document.getElementById('accountType').textContent = 'Artist';
       document.getElementById('registrationDate').textContent = user.created_at
         ? new Date(user.created_at).toLocaleDateString()
         : 'Unknown';
-      // Account tab enhancements
-      setupAccountTab(user);
+      // No longer calling setupAccountTab since we removed that functionality
     }, 100);
   }
 }
 
-// ... existing code ... <continue with the showTab function>
-
-// The rest of the file remains unchanged (all other functions as in the original).
-
-
-// Show tab content in artist dashboard
+// Function to show tab content in artist dashboard
 function showTab(tabName) {
   // Update tab buttons
   const tabs = document.querySelectorAll('#dashboard-nav dd a');
@@ -1771,13 +1737,24 @@ async function changePassword() {
     return;
   }
 
+  // Button state
+  const updateBtn = document.querySelector('#changePasswordForm input[type="button"]');
+  if (updateBtn) {
+    updateBtn.disabled = true;
+    updateBtn.value = 'Updating...';
+  }
+
   try {
     // Get current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
+    const { data, error: userError } = await supabase.auth.getUser();
+    if (userError || !data || !data.user) {
       showNotification('Could not get user session. Please log in again.', 'error');
+      console.log("User session error:", userError);
       return;
     }
+
+    const user = data.user;
+    console.log("Got user session for:", user.email);
 
     // Re-authenticate user with current password
     const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -1787,8 +1764,11 @@ async function changePassword() {
 
     if (signInError) {
       showNotification('Current password is incorrect.', 'error');
+      console.log("Sign in error:", signInError);
       return;
     }
+
+    console.log("Re-authentication successful");
 
     // Update password
     const { error: updateError } = await supabase.auth.updateUser({
@@ -1797,16 +1777,24 @@ async function changePassword() {
 
     if (updateError) {
       showNotification('Failed to update password: ' + updateError.message, 'error');
+      console.log("Update error:", updateError);
       return;
     }
 
+    console.log("Password update successful");
     showNotification('Password updated successfully!', 'success');
     document.getElementById('currentPassword').value = '';
     document.getElementById('newPassword').value = '';
     document.getElementById('confirmPassword').value = '';
   } catch (e) {
     showNotification('An error occurred while updating password.', 'error');
-    console.error(e);
+    console.error("Password update exception:", e);
+  } finally {
+    // Reset button state
+    if (updateBtn) {
+      updateBtn.disabled = false;
+      updateBtn.value = 'Update Password';
+    }
   }
 }
 
@@ -1825,87 +1813,52 @@ async function changeEmail() {
     return;
   }
 
+  // Button state
+  const updateBtn = document.querySelector('#changeEmailForm input[type="button"]');
+  if (updateBtn) {
+    updateBtn.disabled = true;
+    updateBtn.value = 'Updating...';
+  }
+
   try {
     // Re-authenticate
     const { error: signInError } = await supabase.auth.signInWithPassword({
       email: currentEmail,
       password: password
     });
+
     if (signInError) {
       showNotification('Current password is incorrect.', 'error');
+      console.log("Sign in error:", signInError);
       return;
     }
+
+    console.log("Re-authentication successful");
+
     // Update email
-    const { error: updateError } = await supabase.auth.updateUser({ email: newEmail });
+    const { error: updateError } = await supabase.auth.updateUser({
+      email: newEmail
+    });
+
     if (updateError) {
       showNotification('Failed to update email: ' + updateError.message, 'error');
+      console.log("Update error:", updateError);
       return;
     }
+
+    console.log("Email update request sent");
     showNotification('Email update requested. Please check your new email for a confirmation link.', 'success');
     document.getElementById('newEmail').value = '';
     document.getElementById('emailChangePassword').value = '';
   } catch (e) {
     showNotification('An error occurred while updating email.', 'error');
-    console.error(e);
-  }
-}
-
-// Support ticket functions
-function showNewTicketForm() {
-  document.getElementById('newTicketForm').style.display = 'block';
-}
-
-function hideNewTicketForm() {
-  document.getElementById('newTicketForm').style.display = 'none';
-}
-
-function submitTicket() {
-  showNotification('This feature is not yet implemented.', 'info');
-  hideNewTicketForm();
-}
-
-// Setup artwork preview and validation
-function setupArtworkValidation() {
-  const artworkInput = document.getElementById('artwork');
-  if (artworkInput) {
-    // Create a file name display element if it doesn't exist
-    let fileNameSpan = document.getElementById('artworkFileName');
-    if (!fileNameSpan) {
-      fileNameSpan = document.createElement('span');
-      fileNameSpan.id = 'artworkFileName';
-      fileNameSpan.style.marginLeft = '10px';
-      fileNameSpan.style.fontSize = 'x-small';
-      fileNameSpan.textContent = 'No file selected';
-      artworkInput.parentNode.insertBefore(fileNameSpan, artworkInput.nextSibling);
+    console.error("Email update exception:", e);
+  } finally {
+    // Reset button state
+    if (updateBtn) {
+      updateBtn.disabled = false;
+      updateBtn.value = 'Update Email';
     }
-
-    // Create a styled upload button if it doesn't exist
-    let uploadBtn = document.querySelector('input[type="button"][onclick*="artwork"]');
-    if (!uploadBtn) {
-      uploadBtn = document.createElement('input');
-      uploadBtn.type = 'button';
-      uploadBtn.className = 'submit';
-      uploadBtn.value = 'Upload Artwork';
-      uploadBtn.style.fontFamily = 'Tahoma, Verdana, Arial, Helvetica, sans-serif';
-      uploadBtn.onclick = function() {
-        document.getElementById('artwork').click();
-      };
-      artworkInput.parentNode.insertBefore(uploadBtn, artworkInput);
-
-      // Hide the original input
-      artworkInput.style.display = 'none';
-    }
-
-    // Handle file selection
-    artworkInput.addEventListener('change', function(e) {
-      const file = e.target.files[0];
-      if (file) {
-        fileNameSpan.textContent = file.name;
-        validateArtwork(this);
-      } else {
-        fileNameSpan.textContent = 'No file selected';
-      }
-    });
   }
 
   // Set up track file inputs
