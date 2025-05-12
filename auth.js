@@ -1387,7 +1387,7 @@ function showLoggedInState(user, isAdmin) {
           </div>
 
           <div id="pendingReleases">
-            <p id="noReleasesMessage">Loading releases...</p>
+            <p id="noReleasesMessage">No pending releases found.</p>
             <div id="pendingReleasesList"></div>
           </div>
         </div>
@@ -1507,7 +1507,7 @@ function showLoggedInState(user, isAdmin) {
           <div id="releases-tab" class="tab-content" style="display: none;">
             <h2 class="pCase" style="margin-top: 0;">Your Releases</h2>
             <div class="dispBoxLeft" id="userReleases" style="border: none; padding: 0;">
-              <p id="userReleasesMessage">Loading your releases...</p>
+              <p id="userReleasesMessage">No releases found.</p>
               <div id="userReleasesList"></div>
             </div>
           </div>
@@ -1612,7 +1612,7 @@ function showLoggedInState(user, isAdmin) {
                 <div id="changeEmailForm">
                   <div style="margin-bottom: 10px;">
                     <p class="pCase">Current Email</p>
-                    <p id="currentEmail" style="padding: 5px 0;">Loading...</p>
+                    <p id="currentEmail" style="padding: 5px 0;"></p>
                   </div>
                   <div style="margin-bottom: 10px;">
                     <p class="pCase">New Email*</p>
@@ -1655,9 +1655,9 @@ function showLoggedInState(user, isAdmin) {
               <div style="background: #484848; border: 1px solid #666; padding: 15px;">
                 <h3 class="pCase" style="margin-top: 0;">Account Information</h3>
                 <div id="accountInfo">
-                  <p><strong>Email:</strong> <span id="userEmail">Loading...</span></p>
-                  <p><strong>Account Type:</strong> <span id="accountType">Loading...</span></p>
-                  <p><strong>Registered:</strong> <span id="registrationDate">Loading...</span></p>
+                  <p><strong>Email:</strong> <span id="userEmail"></span></p>
+                  <p><strong>Account Type:</strong> <span id="accountType"></span></p>
+                  <p><strong>Registered:</strong> <span id="registrationDate"></span></p>
                 </div>
               </div>
             </div>
