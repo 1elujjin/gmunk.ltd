@@ -2182,6 +2182,74 @@ function setupUploadForm() {
   setupTrackFileInput(0);
 }
 
+/**
+ * Function to validate artwork dimensions
+ */
+function setupArtworkValidation() {
+  console.log('Setting up artwork validation');
+  const artworkFileInput = document.getElementById('artworkFile');
+
+  if (!artworkFileInput) {
+    console.error('Artwork file input not found');
+    return;
+  }
+
+  artworkFileInput.addEventListener('change', function() {
+    validateArtwork(this);
+  });
+}
+
+// Validate artwork dimensions and format
+function validateArtwork(input) {
+  if (!input.files || !input.files[0]) {
+    return;
+  }
+
+  const file = input.files[0];
+
+  // Check file type
+  if (!file.type.match('image.*')) {
+    showNotification('Please select a valid image file (JPEG, PNG, etc.)', 'error');
+    input.value = ''; // Clear the input
+    return;
+  }
+
+  // Check file size (max 5MB)
+  if (file.size > 5 * 1024 * 1024) {
+    showNotification('Artwork file is too large. Maximum size is 5MB.', 'error');
+    input.value = ''; // Clear the input
+    return;
+  }
+
+  // Check dimensions
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      const width = this.width;
+      const height = this.height;
+
+      // Check if it's square
+      if (width !== height) {
+        showNotification('Artwork should be square (same width and height)', 'warning');
+        // We don't clear the input here to allow user to see the preview anyway
+      }
+
+      // Check minimum dimensions
+      if (width < 1000 || height < 1000) {
+        showNotification('For best quality, artwork should be at least 1000x1000 pixels', 'warning');
+      }
+
+      // Update preview regardless of validation
+      handleArtworkSelection(input);
+    };
+
+    img.src = e.target.result;
+  };
+
+  reader.readAsDataURL(file);
+}
+
 // Setup event listener for a track file input
 function setupTrackFileInput(index) {
   const trackFileInput = document.getElementById(`track-file-${index}`);
@@ -3128,4 +3196,10 @@ async function handleUpload(event) {
     submitButton.value = originalButtonValue;
     submitButton.disabled = false;
   }
+}
+
+// Dummy showNotification function for demonstration
+function showNotification(message, type, timeout) {
+  // You can replace this with your own notification logic
+  alert(`[${type}] ${message}`);
 }
