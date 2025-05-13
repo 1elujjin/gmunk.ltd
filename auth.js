@@ -2346,243 +2346,337 @@ function setupTrackFileUploads() {
   });
 }
 
-// Validate artwork dimensions
-function validateArtwork(input) {
-  const file = input.files[0];
-  const errorDiv = document.getElementById('artworkError');
-  const preview = document.getElementById('artworkPreviewImg');
+/**
+ * Function to validate artwork dimensions
+ */
+function setupArtworkValidation() {
+  console.log('Setting up artwork validation');
+  const artworkFileInput = document.getElementById('artworkFile');
 
-  // Reset error state
-  errorDiv.style.display = 'none';
-  input.setCustomValidity('');
-
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      const img = new Image();
-      img.onload = function() {
-        // Check if image is square and at least 1500x1500
-        if (img.width !== img.height || img.width < 1500) {
-          errorDiv.style.display = 'block';
-          input.setCustomValidity('Artwork must be square and at least 1500x1500 pixels.');
-        } else {
-          // Valid image
-          errorDiv.style.display = 'none';
-          input.setCustomValidity('');
-        }
-
-        // Show the preview regardless of validation
-        preview.src = e.target.result;
-        preview.style.display = 'block';
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  }
-}
-
-// Setup the upload form with proper fields
-function setupUploadForm() {
-  const uploadTab = document.getElementById('upload-tab');
-  if (!uploadTab) return;
-
-  // Set up the upload form regardless of current content
-  // Previous check was causing issues
-  const uploadForm = uploadTab.querySelector('form');
-  if (!uploadForm) {
-    console.error('Upload form not found');
+  if (!artworkFileInput) {
+    console.error('Artwork file input not found');
     return;
   }
 
-  // Set up the upload form with all required fields
-  uploadForm.innerHTML = `
-    <div class="dispBoxLeft">
-      <p class="pCase" style="font-size: x-small; color: #BFED46;">Release Information</p>
-      <div class="form-row">
-        <div style="margin-bottom: 10px;">
-          <p class="pCase">Artist Name*</p>
-          <input type="text" id="artistName" name="artistName" class="newsletterInput" required style="font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif; color: #FFFFFF;">
-        </div>
-        <div style="margin-bottom: 10px;">
-          <p class="pCase">Release Title*</p>
-          <input type="text" id="releaseTitle" name="releaseTitle" class="newsletterInput" required style="font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif; color: #FFFFFF;">
-        </div>
-      </div>
-      <div class="form-row">
-        <div style="margin-bottom: 10px;">
-          <p class="pCase">Release Type*</p>
-          <select id="releaseType" name="releaseType" class="newsletterInput" required onchange="toggleTracksSection()" style="width: 278px; background: url('../../image/inputTextBg.gif') top left repeat-x; color: #FFFFFF; height: 22px; font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif;">
-            <option value="">Select Type</option>
-            <option value="single">Single</option>
-            <option value="ep">EP</option>
-            <option value="album">Album</option>
-          </select>
-        </div>
-        <div style="margin-bottom: 10px;">
-          <p class="pCase">Release Date*</p>
-          <input type="date" id="releaseDate" name="releaseDate" class="newsletterInput" required style="font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif; color: #FFFFFF;">
-        </div>
-      </div>
-      <div class="form-row">
-        <div style="margin-bottom: 10px;">
-          <p class="pCase">Primary Genre*</p>
-          <select id="primaryGenre" name="primaryGenre" class="newsletterInput" required style="width: 278px; background: url('../../image/inputTextBg.gif') top left repeat-x; color: #FFFFFF; height: 22px; font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif;">
-            <option value="">Select Genre</option>
-            <option value="electronic">Electronic</option>
-            <option value="rock">Rock</option>
-            <option value="pop">Pop</option>
-            <option value="rap">Rap/Hip-Hop</option>
-            <option value="rnb">R&B</option>
-            <option value="jazz">Jazz</option>
-            <option value="classical">Classical</option>
-            <option value="country">Country</option>
-            <option value="folk">Folk</option>
-            <option value="latin">Latin</option>
-            <option value="world">World</option>
-            <option value="other">Other</option>
-          </select>
-        </div>
-        <div style="margin-bottom: 10px;">
-          <p class="pCase">Secondary Genre (Optional)</p>
-          <select id="secondaryGenre" name="secondaryGenre" class="newsletterInput" style="width: 278px; background: url('../../image/inputTextBg.gif') top left repeat-x; color: #FFFFFF; height: 22px; font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif;">
-            <option value="">Select Genre (Optional)</option>
-            <option value="electronic">Electronic</option>
-            <option value="rock">Rock</option>
-            <option value="pop">Pop</option>
-            <option value="rap">Rap/Hip-Hop</option>
-            <option value="rnb">R&B</option>
-            <option value="jazz">Jazz</option>
-            <option value="classical">Classical</option>
-            <option value="country">Country</option>
-            <option value="folk">Folk</option>
-            <option value="latin">Latin</option>
-            <option value="world">World</option>
-            <option value="other">Other</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-row">
-        <div style="margin-bottom: 10px;">
-          <p class="pCase">Explicit Content*</p>
-          <div style="display: flex; gap: 20px; margin-top: 5px;">
-            <label style="display: flex; align-items: center; gap: 5px; color: #EEEEEE; font-size: x-small; font-weight: normal;">
-              <input type="radio" name="explicit" value="no" checked> No
-            </label>
-            <label style="display: flex; align-items: center; gap: 5px; color: #EEEEEE; font-size: x-small; font-weight: normal;">
-              <input type="radio" name="explicit" value="yes"> Yes
-            </label>
-          </div>
-        </div>
-        <div style="margin-bottom: 10px;">
-          <p class="pCase">YouTube Content ID*</p>
-          <div style="display: flex; gap: 20px; margin-top: 5px;">
-            <label style="display: flex; align-items: center; gap: 5px; color: #EEEEEE; font-size: x-small; font-weight: normal;">
-              <input type="radio" name="youtubeContentId" value="no" checked> No
-            </label>
-            <label style="display: flex; align-items: center; gap: 5px; color: #EEEEEE; font-size: x-small; font-weight: normal;">
-              <input type="radio" name="youtubeContentId" value="yes"> Yes
-            </label>
-          </div>
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group half">
-          <p class="pCase">Original Release Date (if previously released)</p>
-          <input type="date" id="ogReleaseDate" name="ogReleaseDate" class="newsletterInput" style="font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif; color: #FFFFFF;">
-        </div>
-        <div class="form-group half">
-          <p class="pCase">License*</p>
-          <div style="display: flex; gap: 20px; margin-top: 5px;">
-            <label style="display: flex; align-items: center; gap: 5px; color: #EEEEEE; font-size: x-small; font-weight: normal; font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif;">
-              <input type="radio" name="license" value="arr" checked> All Rights Reserved
-            </label>
-            <label style="display: flex; align-items: center; gap: 5px; color: #EEEEEE; font-size: x-small; font-weight: normal; font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif;">
-              <input type="radio" name="license" value="cc"> Creative Commons
-            </label>
-          </div>
-        </div>
-      </div>
-      <div>
-        <p class="pCase">Cover Artwork* (Must be square, 1500x1500px minimum)</p>
-        <div>
-          <input type="button" class="submit" value="Upload Artwork" onclick="document.getElementById('artwork').click()" style="font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif;">
-          <span id="artworkFileName" style="margin-left: 10px; font-size: x-small; font-weight: normal;">No file selected</span>
-        </div>
-        <input type="file" id="artwork" name="artwork" accept="image/*" required style="display: none;">
-        <div style="margin: 10px 0; border: 5px solid #484848; width: 150px; height: 150px; background: #333; display: flex; justify-content: center; align-items: center; overflow: hidden;">
-          <img id="artworkPreviewImg" style="display: none; max-width: 100%; max-height: 100%;" alt="Artwork Preview">
-        </div>
-        <div id="artworkError" style="color: #FF6B6B; display: none; font-size: x-small;">
-          Artwork must be square and at least 1500x1500 pixels.
-        </div>
-      </div>
-    </div>
-
-    <div class="dispBoxLeft" id="tracks-section" style="display: none;">
-      <p class="pCase" style="font-size: x-small; color: #BFED46;">Track Information</p>
-      <div id="tracks-container">
-        <!-- Track items will be added here -->
-        <div id="track-template" class="track-item" style="margin-bottom: 15px; padding: 10px; background: #5D5D5D; border: 5px solid #484848;">
-          <p class="pCase" style="margin-bottom: 10px;">Track 1</p>
-          <div style="margin-bottom: 10px;">
-            <p class="pCase">Track Name*</p>
-            <input type="text" class="newsletterInput track-name" required style="font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif; color: #FFFFFF;">
-          </div>
-          <div style="margin-bottom: 10px;">
-            <p class="pCase">ISRC (if available)</p>
-            <input type="text" class="newsletterInput track-isrc" placeholder="e.g., USRC17607839" style="font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif; color: #FFFFFF;">
-          </div>
-          <div>
-            <p class="pCase">Audio File*</p>
-            <div>
-              <input type="button" class="submit" value="Upload Audio File" onclick="document.getElementById('audio-file-'+this.closest('.track-item').id.split('-').pop()).click()" style="font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif;">
-              <span class="track-file-name" style="margin-left: 10px; font-size: x-small; font-weight: normal;">No file selected</span>
-            </div>
-            <input id="audio-file-template" type="file" class="track-file" accept="audio/*" required style="display: none;">
-          </div>
-        </div>
-      </div>
-      <div id="multiple-tracks-controls" style="display: none; margin-top: 10px;">
-        <input type="button" id="add-track-btn" onclick="addTrackItem()" class="submit" value="Add Another Track" style="font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif;">
-      </div>
-    </div>
-
-    <div class="dispBoxLeft">
-      <p class="pCase" style="font-size: x-small; color: #BFED46;">Additional Information</p>
-      <div class="form-row">
-        <div class="form-group half">
-          <p class="pCase">UPC (if you have one)</p>
-          <input type="text" id="upc" name="upc" class="newsletterInput" placeholder="e.g., 123456789012" style="font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif; color: #FFFFFF;">
-        </div>
-        <div class="form-group half">
-          <p class="pCase">Featured Artists (if any)</p>
-          <input type="text" id="featuredArtists" name="featuredArtists" class="newsletterInput" placeholder="e.g., DJ XYZ, Singer ABC" style="font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif; color: #FFFFFF;">
-        </div>
-      </div>
-      <div class="form-group">
-        <p class="pCase">Primary Artists (if different from artist name)</p>
-        <input type="text" id="primaryArtists" name="primaryArtists" class="newsletterInput" placeholder="Separate multiple artists with commas" style="font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif; color: #FFFFFF;">
-      </div>
-      <div class="form-group">
-        <p class="pCase">Credits</p>
-        <textarea id="credits" name="credits" class="newsletterInput" rows="4" placeholder="Music by..., Lyrics by..., etc." style="font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif; color: #FFFFFF;"></textarea>
-      </div>
-      <div class="form-group">
-        <p class="pCase">Additional Notes</p>
-        <textarea id="notes" name="notes" class="newsletterInput" rows="4" placeholder="Any additional information..." style="font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif; color: #FFFFFF;"></textarea>
-      </div>
-    </div>
-
-    <div style="text-align: right; margin-top: 15px;">
-      <input type="submit" class="submit" value="Submit Release" style="font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif;">
-    </div>
-  `;
-
-  console.log("Upload form HTML setup completed");
-
-  // Setup event listeners for the form
-  setupArtworkValidation();
+  artworkFileInput.addEventListener('change', function() {
+    validateArtwork(this);
+  });
 }
+
+// Validate artwork dimensions and format
+function validateArtwork(input) {
+  if (!input.files || !input.files[0]) {
+    return;
+  }
+
+  const file = input.files[0];
+
+  // Check file type
+  if (!file.type.match('image.*')) {
+    showNotification('Please select a valid image file (JPEG, PNG, etc.)', 'error');
+    input.value = ''; // Clear the input
+    return;
+  }
+
+  // Check file size (max 5MB)
+  if (file.size > 5 * 1024 * 1024) {
+    showNotification('Artwork file is too large. Maximum size is 5MB.', 'error');
+    input.value = ''; // Clear the input
+    return;
+  }
+
+  // Check dimensions
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      const width = this.width;
+      const height = this.height;
+
+      // Check if it's square
+      if (width !== height) {
+        showNotification('Artwork should be square (same width and height)', 'warning');
+        // We don't clear the input here to allow user to see the preview anyway
+      }
+
+      // Check minimum dimensions
+      if (width < 1000 || height < 1000) {
+        showNotification('For best quality, artwork should be at least 1000x1000 pixels', 'warning');
+      }
+
+      // Update preview regardless of validation
+      handleArtworkSelection(input);
+    };
+
+    img.src = e.target.result;
+  };
+
+  reader.readAsDataURL(file);
+}
+
+// Example placeholder for showNotification
+function showNotification(message, type) {
+  // Implement your notification logic here
+  alert(`[${type}] ${message}`);
+}
+
+// Example placeholder for handleArtworkSelection
+function handleArtworkSelection(input) {
+  // Implement your artwork preview logic here
+  console.log('Artwork selected:', input.files[0]);
+
+  const previewContainer = document.getElementById('artworkPreviewContainer');
+  const preview = document.getElementById('artworkPreview');
+  const fileNameSpan = document.getElementById('artworkFileName');
+
+  if (!previewContainer || !preview || !fileNameSpan) {
+    return;
+  }
+
+  if (input.files && input.files[0]) {
+    const file = input.files[0];
+    fileNameSpan.textContent = file.name;
+    previewContainer.style.display = 'block';
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      preview.style.backgroundImage = `url(${e.target.result})`;
+    };
+    reader.readAsDataURL(file);
+  } else {
+    previewContainer.style.display = 'none';
+    preview.style.backgroundImage = 'none';
+    fileNameSpan.textContent = '';
+  }
+}
+
+// Example placeholder for addTrackField
+function addTrackField() {
+  // Implement your logic to add a new track field
+  console.log('Add track field');
+
+  const tracksContainer = document.getElementById('tracksContainer');
+  if (!tracksContainer) {
+    console.error('Tracks container not found');
+    return;
+  }
+
+  const currentTrackCount = tracksContainer.querySelectorAll('.track-item').length;
+  const newIndex = currentTrackCount;
+
+  // Create new track item container
+  const trackItem = document.createElement('div');
+  trackItem.className = 'track-item';
+  trackItem.style.borderBottom = '1px solid #484848';
+  trackItem.style.marginBottom = '10px';
+  trackItem.style.paddingBottom = '10px';
+
+  // Track name label and input
+  const trackNameLabel = document.createElement('p');
+  trackNameLabel.className = 'pCase';
+  trackNameLabel.textContent = `Track ${newIndex + 1} Name*`;
+  trackItem.appendChild(trackNameLabel);
+
+  const trackNameInput = document.createElement('input');
+  trackNameInput.type = 'text';
+  trackNameInput.id = `track-name-${newIndex}`;
+  trackNameInput.className = 'newsletterInput';
+  trackNameInput.required = true;
+  trackItem.appendChild(trackNameInput);
+
+  // Track audio file label and input
+  const trackFileLabel = document.createElement('p');
+  trackFileLabel.className = 'pCase';
+  trackFileLabel.textContent = `Track ${newIndex + 1} Audio File (MP3 recommended)*`;
+  trackItem.appendChild(trackFileLabel);
+
+  const trackFileDiv = document.createElement('div');
+  trackFileDiv.style.marginBottom = '10px';
+
+  const trackFileInput = document.createElement('input');
+  trackFileInput.type = 'file';
+  trackFileInput.id = `track-file-${newIndex}`;
+  trackFileInput.name = `track-file-${newIndex}`;
+  trackFileInput.accept = 'audio/*';
+  trackFileInput.required = true;
+  trackFileInput.style.backgroundColor = '#484848';
+  trackFileInput.style.color = '#BFED46';
+  trackFileInput.style.padding = '5px';
+  trackFileInput.style.border = '1px solid #666';
+  trackFileInput.style.width = '100%';
+  trackFileInput.style.maxWidth = '300px';
+
+  trackFileDiv.appendChild(trackFileInput);
+  trackItem.appendChild(trackFileDiv);
+
+  // Track file info div
+  const trackFileInfoDiv = document.createElement('div');
+  trackFileInfoDiv.className = 'track-file-info';
+  trackFileInfoDiv.style.display = 'none';
+
+  const trackFileInfoP = document.createElement('p');
+  trackFileInfoP.textContent = 'Selected file: ';
+
+  const trackFileNameSpan = document.createElement('span');
+  trackFileNameSpan.className = 'track-filename';
+  trackFileNameSpan.style.color = '#BFED46';
+
+  trackFileInfoP.appendChild(trackFileNameSpan);
+  trackFileInfoDiv.appendChild(trackFileInfoP);
+  trackItem.appendChild(trackFileInfoDiv);
+
+  tracksContainer.appendChild(trackItem);
+
+  // Add event listener for new track file input
+  trackFileInput.addEventListener('change', function() {
+    handleTrackFileSelection(this, newIndex);
+  });
+}
+
+// Example placeholder for handleTrackFileSelection
+function handleTrackFileSelection(input, index) {
+  // Implement your logic to handle track file selection
+  console.log(`Track file selected for index ${index}:`, input.files[0]);
+
+  const trackItem = input.closest('.track-item');
+  if (!trackItem) return;
+
+  const fileInfoDiv = trackItem.querySelector('.track-file-info');
+  const fileNameSpan = trackItem.querySelector('.track-filename');
+
+  if (input.files && input.files[0]) {
+    fileNameSpan.textContent = input.files[0].name;
+    fileInfoDiv.style.display = 'block';
+  } else {
+    fileNameSpan.textContent = '';
+    fileInfoDiv.style.display = 'none';
+  }
+}
+
+// Example placeholder for handleUpload
+function handleUpload(event) {
+  // Implement your upload logic here
+  event.preventDefault();
+  console.log('Form submitted');
+}
+
+// Main function to set up the upload form
+function setupUploadForm() {
+  console.log('Setting up upload form');
+  const uploadForm = document.getElementById('uploadForm');
+
+  if (!uploadForm) {
+    console.error('Upload form not found during setup');
+    return;
+  }
+
+  // YOUR EXISTING DETAILED INNERHTML FOR THE FORM GOES HERE
+  // Make sure it includes: <input type="file" id="artworkFile" ... />
+  // and <input type="button" id="addTrackButton" ... />
+  // and <input type="file" id="track-file-0" ... />
+  uploadForm.innerHTML = `
+    <div style="margin-bottom: 20px;">
+      <div style="margin-bottom: 15px;">
+        <p class="pCase">Artist Name*</p>
+        <input type="text" id="artistName" class="newsletterInput" required>
+      </div>
+
+      <div style="margin-bottom: 15px;">
+        <p class="pCase">Release Title*</p>
+        <input type="text" id="releaseTitle" class="newsletterInput" required>
+      </div>
+
+      <div style="margin-bottom: 15px;">
+        <p class="pCase">Release Type*</p>
+        <select id="releaseType" class="newsletterInput" required style="background-color: #5D5D5D; color: #fff; width: 278px; appearance: menulist; -webkit-appearance: menulist;">
+          <option value="single">Single</option>
+          <option value="ep">EP</option>
+          <option value="album">Album</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom: 15px;">
+        <p class="pCase">Artwork (1400x1400px JPG recommended)*</p>
+        <div style="margin-bottom: 10px;">
+          <input type="file" id="artworkFile" name="artworkFile" accept="image/*" required
+            style="background-color: #484848; color: #BFED46; padding: 5px; border: 1px solid #666; width: 100%; max-width: 300px;">
+        </div>
+        <div id="artworkPreviewContainer" style="display: none; margin-top: 10px;">
+          <p>Selected artwork: <span id="artworkFileName" style="color: #BFED46;"></span></p>
+          <div id="artworkPreview" style="width: 150px; height: 150px; border: 2px solid #484848;
+            background-position: center; background-size: cover; background-repeat: no-repeat;"></div>
+        </div>
+      </div>
+
+      <!-- Track Upload Section -->
+      <div style="margin-bottom: 15px;">
+        <h3 class="pCase">Track Information</h3>
+        <div id="tracksContainer">
+          <div class="track-item" style="border-bottom: 1px solid #484848; margin-bottom: 10px; padding-bottom: 10px;">
+            <p class="pCase">Track 1 Name*</p>
+            <input type="text" id="track-name-0" class="newsletterInput" required>
+
+            <p class="pCase">Track 1 Audio File (MP3 recommended)*</p>
+            <div style="margin-bottom: 10px;">
+              <input type="file" id="track-file-0" name="track-file-0" accept="audio/*" required
+                style="background-color: #484848; color: #BFED46; padding: 5px; border: 1px solid #666; width: 100%; max-width: 300px;">
+            </div>
+            <div class="track-file-info" style="display: none;">
+              <p>Selected file: <span class="track-filename" style="color: #BFED46;"></span></p>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: 10px;">
+          <input type="button" id="addTrackButton" value="+ Add Track" class="submit">
+        </div>
+      </div>
+
+      <div style="text-align: right; margin-top: 20px;">
+        <input type="submit" value="Submit Release" class="submit">
+      </div>
+    </div>
+  `; // END OF YOUR DETAILED INNERHTML
+
+  // Crucially, call setupArtworkValidation *after* innerHTML is set.
+  if (document.getElementById('artworkFile')) {
+    setupArtworkValidation();
+  } else {
+    console.error('CRITICAL: artworkFile element not found immediately after setting innerHTML in setupUploadForm. Validation will not work.');
+  }
+
+  const addTrackButton = document.getElementById('addTrackButton');
+  if (addTrackButton) {
+    addTrackButton.addEventListener('click', addTrackField);
+  }
+
+  const initialTrackFileInput = document.getElementById('track-file-0');
+  if (initialTrackFileInput) {
+    initialTrackFileInput.addEventListener('change', function() {
+      handleTrackFileSelection(this, 0);
+    });
+  }
+
+  const artworkInput = document.getElementById('artworkFile');
+  if(artworkInput) {
+    artworkInput.addEventListener('change', function() {
+        handleArtworkSelection(this);
+    });
+  }
+
+  // The form itself for submission
+  const musicUploadForm = document.getElementById('uploadForm'); // Assuming your form in HTML has id="uploadForm"
+  if (musicUploadForm) {
+    musicUploadForm.addEventListener('submit', handleUpload);
+  } else {
+      console.error("Could not find the form with id 'uploadForm' to attach submit listener");
+  }
+
+  console.log('Upload form fully initialized with event listeners.');
+}
+
+// Call setupUploadForm on DOMContentLoaded
+document.addEventListener('DOMContentLoaded', setupUploadForm);
 
 // Toggle tracks section based on release type
 function toggleTracksSection() {
