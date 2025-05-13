@@ -7,39 +7,6 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 // initialize the client
 const supabase = (typeof window !== 'undefined') ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
-// Function to show notifications instead of alerts
-function showNotification(message, type = 'info', duration = 4000) {
-  // Remove any existing notifications
-  const existingNotifications = document.querySelectorAll('.notification-popup');
-  existingNotifications.forEach(notification => {
-    document.body.removeChild(notification);
-  });
-
-  // Create new notification element
-  const notification = document.createElement('div');
-  notification.className = `notification-popup ${type}`;
-  notification.textContent = message;
-  notification.style.opacity = '0';
-
-  // Add to DOM
-  document.body.appendChild(notification);
-
-  // Trigger animation
-  setTimeout(() => {
-    notification.style.opacity = '1';
-  }, 10);
-
-  // Remove after duration
-  setTimeout(() => {
-    notification.style.opacity = '0';
-    setTimeout(() => {
-      if (notification.parentNode) {
-        document.body.removeChild(notification);
-      }
-    }, 300); // Wait for fade out animation
-  }, duration);
-}
-
 // Track if we're in review mode to add ESC key functionality
 let inReviewMode = false;
 
@@ -73,7 +40,7 @@ function dataURLtoBlob(dataURL) {
 // Function to download artwork
 function downloadArtwork(artworkDataUrl, artistName, releaseTitle) {
   if (!artworkDataUrl) {
-    showNotification('No artwork available to download.', 'error');
+    alert('No artwork available to download.');
     return;
   }
 
@@ -275,166 +242,6 @@ async function updateReleaseStatus(releaseId, newStatus) {
   }
 }
 
-// Approve release
-async function approveRelease(releaseId) {
-  try {
-    console.log("Approving release:", releaseId);
-
-    // First get the current release data
-    const { data: releases, error: fetchError } = await supabase
-      .from('releases')
-      .select('*')
-      .eq('id', releaseId)
-      .limit(1);
-
-    if (fetchError) {
-      console.error('Error fetching release for approval:', fetchError.message);
-      // Fall back to old method if Supabase fetch fails
-      fallbackApproveRelease(releaseId);
-      return;
-    }
-
-    if (!releases || releases.length === 0) {
-      console.error('Release not found for approval');
-      showNotification('Release not found. Cannot approve.', 'error');
-      return;
-    }
-
-    const release = releases[0];
-    console.log("Release found:", release);
-
-    // Update the status to approved - need to explicitly use UPDATE operation
-    const { error } = await supabase
-      .from('releases')
-      .update({ status: 'approved' })
-      .eq('id', releaseId);
-
-    if (error) {
-      console.error('Error approving release in Supabase:', error.message);
-      // Try fallback method
-      fallbackApproveRelease(releaseId);
-      return;
-    }
-
-    console.log("Release approved successfully in Supabase");
-
-    // Reload the pending releases to update the UI
-    await loadPendingReleases();
-    showNotification('Release has been approved successfully.', 'success');
-  } catch (e) {
-    console.error('Error in approve process:', e);
-    // Try fallback method
-    fallbackApproveRelease(releaseId);
-  }
-}
-
-// Fallback approval method using localStorage
-async function fallbackApproveRelease(releaseId) {
-  try {
-    // Get current releases from localStorage
-    let releases = JSON.parse(localStorage.getItem('musicReleases') || '[]');
-
-    // Find the release to approve
-    const updatedReleases = releases.map(release => {
-      if (release.id === releaseId) {
-        return { ...release, status: 'approved' };
-      }
-      return release;
-    });
-
-    // Save back to localStorage
-    localStorage.setItem('musicReleases', JSON.stringify(updatedReleases));
-
-    // Reload the admin dashboard
-    loadPendingReleases();
-
-    showNotification('Release has been approved (using fallback method).', 'success');
-  } catch (e) {
-    console.error('Fallback approval failed:', e);
-    showNotification('Failed to approve release. Please try again.', 'error');
-  }
-}
-
-// Reject release
-async function rejectRelease(releaseId) {
-  try {
-    console.log("Rejecting release:", releaseId);
-
-    // First get the current release data
-    const { data: releases, error: fetchError } = await supabase
-      .from('releases')
-      .select('*')
-      .eq('id', releaseId)
-      .limit(1);
-
-    if (fetchError) {
-      console.error('Error fetching release for rejection:', fetchError.message);
-      // Fall back to old method if Supabase fetch fails
-      fallbackRejectRelease(releaseId);
-      return;
-    }
-
-    if (!releases || releases.length === 0) {
-      console.error('Release not found for rejection');
-      showNotification('Release not found. Cannot reject.', 'error');
-      return;
-    }
-
-    const release = releases[0];
-    console.log("Release found for rejection:", release);
-
-    // Update the status to rejected - need to explicitly use UPDATE operation
-    const { error } = await supabase
-      .from('releases')
-      .update({ status: 'rejected' })
-      .eq('id', releaseId);
-
-    if (error) {
-      console.error('Error rejecting release in Supabase:', error.message);
-      // Try fallback method
-      fallbackRejectRelease(releaseId);
-      return;
-    }
-
-    console.log("Release rejected successfully in Supabase");
-
-    // Reload the pending releases to update the UI
-    await loadPendingReleases();
-    showNotification('Release has been rejected.', 'success');
-  } catch (e) {
-    console.error('Error in reject process:', e);
-    // Try fallback method
-    fallbackRejectRelease(releaseId);
-  }
-}
-
-// Fallback rejection method using localStorage
-async function fallbackRejectRelease(releaseId) {
-  try {
-    // Get current releases from localStorage
-    let releases = JSON.parse(localStorage.getItem('musicReleases') || '[]');
-
-    // Find the release to reject
-    const updatedReleases = releases.map(release => {
-      if (release.id === releaseId) {
-        return { ...release, status: 'rejected' };
-      }
-      return release;
-    });
-
-    // Save back to localStorage
-    localStorage.setItem('musicReleases', JSON.stringify(updatedReleases));
-
-    // Reload the admin dashboard
-    loadPendingReleases();
-
-    showNotification('Release has been rejected (using fallback method).', 'success');
-  } catch (e) {
-    console.error('Fallback rejection failed:', e);
-    showNotification('Failed to reject release. Please try again.', 'error');
-  }
-}
-
 // Initialize Supabase storage bucket and table
 async function initializeStorage() {
   try {
@@ -471,11 +278,390 @@ async function initializeStorage() {
     if (tableCheckError && tableCheckError.code === '42P01') {
       console.error('Releases table does not exist. Please create it in the Supabase dashboard.');
       // We can't create tables via the JS client, so we'll display instructions
-      showNotification('The releases table needs to be created in your Supabase project. Please check the console for instructions.', 'error', 8000);
+      alert('The releases table needs to be created in your Supabase project. Please check the console for instructions.');
       console.log('INSTRUCTIONS: Create a table named "releases" in your Supabase dashboard with columns matching the structure of the release object.');
     }
   } catch (err) {
     console.error('Storage initialization failed:', err);
+  }
+}
+
+// Handle page load
+document.addEventListener('DOMContentLoaded', function() {
+  // Check if user is already logged in
+  checkSession();
+
+  // Setup form placeholders
+  const emailInput = document.getElementById('email');
+  const passwordInput = document.getElementById('password');
+
+  // Clear placeholders on focus if they contain default values
+  emailInput.addEventListener('focus', function() {
+    if (this.value === 'Email Address') this.value = '';
+  });
+
+  passwordInput.addEventListener('focus', function() {
+    if (this.value === 'Password') this.value = '';
+  });
+
+  // Restore placeholders on blur if empty
+  emailInput.addEventListener('blur', function() {
+    if (this.value === '') this.value = 'Email Address';
+  });
+
+  passwordInput.addEventListener('blur', function() {
+    if (this.value === '') this.value = 'Password';
+  });
+
+  // Add ESC key listener for closing review modal
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && inReviewMode) {
+      closeReviewModal();
+    }
+  });
+
+  // Initialize Supabase storage bucket if needed
+  initializeStorage();
+});
+
+// Check if user is already logged in
+async function checkSession() {
+  const { data: { session } } = await supabase.auth.getSession();
+
+  if (session) {
+    // Check if user is admin or artist
+    const isAdmin = session.user.email.toLowerCase() === '1@elujj.in';
+
+    // User is logged in, redirect to dashboard content or show logged-in state
+    showLoggedInState(session.user, isAdmin);
+  }
+}
+
+// Handle login form submission
+async function handleLogin(event) {
+  event.preventDefault();
+
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+
+  // Display loading state
+  const authMessage = document.getElementById('authMessage');
+  authMessage.className = 'info';
+  authMessage.innerHTML = 'Processing...';
+
+  try {
+    // Handle login
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email,
+      password: password
+    });
+
+    if (error) throw error;
+
+    // Login successful
+    authMessage.className = 'success';
+    authMessage.innerHTML = 'Login successful!';
+
+    // Check if user is admin or artist
+    const isAdmin = email.toLowerCase() === '1@elujj.in';
+
+    // Show appropriate dashboard based on user type
+    showLoggedInState(data.user, isAdmin);
+  } catch (error) {
+    authMessage.className = 'error';
+    authMessage.innerHTML = `Error: ${error.message}`;
+  }
+}
+
+// No toggleAuthMode function needed for invite-only
+
+// Show the logged in state
+function showLoggedInState(user, isAdmin) {
+  const leftColumn = document.getElementById('leftColumn');
+
+  if (isAdmin) {
+    // Admin dashboard
+    leftColumn.innerHTML = `
+      <h1>Admin Dashboard</h1>
+      <p>Welcome back, ${user.email}</p>
+
+      <div id="admin-tabs" style="margin: 20px 0;">
+        <input type="button" value="Pending Approvals" onclick="showAdminTab('pending')" class="submit" style="margin-right: 10px;">
+        <input type="button" value="All Releases" onclick="showAdminTab('all')" class="submit">
+      </div>
+
+      <div id="pending-tab" class="admin-tab-content active">
+        <div class="dispBoxLeft">
+          <h3>Pending Approvals</h3>
+
+          <div class="admin-filters">
+            <div class="filter-group">
+              <label for="pending-filter-artist">Artist:</label>
+              <input type="text" id="pending-filter-artist" placeholder="Filter by artist">
+            </div>
+            <div class="filter-group">
+              <label for="pending-filter-type">Type:</label>
+              <select id="pending-filter-type">
+                <option value="">All Types</option>
+                <option value="single">Single</option>
+                <option value="ep">EP</option>
+                <option value="album">Album</option>
+              </select>
+            </div>
+            <div class="filter-actions">
+              <input type="button" value="Apply Filters" onclick="applyPendingFilters()" class="submit">
+              <input type="button" value="Reset" onclick="resetPendingFilters()" class="submit" style="margin-left: 5px;">
+            </div>
+          </div>
+
+          <div id="pendingReleases">
+            <p id="noReleasesMessage">Loading releases...</p>
+            <div id="pendingReleasesList"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="all-tab" class="admin-tab-content" style="display: none;">
+        <div class="dispBoxLeft">
+          <h3>All Releases</h3>
+
+          <div class="admin-filters">
+            <div class="filter-group">
+              <label for="all-filter-artist">Artist:</label>
+              <input type="text" id="all-filter-artist" placeholder="Filter by artist">
+            </div>
+            <div class="filter-group">
+              <label for="all-filter-status">Status:</label>
+              <select id="all-filter-status">
+                <option value="">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+                <option value="deletion-requested">Deletion Requested</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label for="all-filter-type">Type:</label>
+              <select id="all-filter-type">
+                <option value="">All Types</option>
+                <option value="single">Single</option>
+                <option value="ep">EP</option>
+                <option value="album">Album</option>
+              </select>
+            </div>
+            <div class="filter-actions">
+              <input type="button" value="Apply Filters" onclick="applyAllFilters()" class="submit">
+              <input type="button" value="Reset" onclick="resetAllFilters()" class="submit" style="margin-left: 5px;">
+            </div>
+          </div>
+
+          <table id="all-releases-table" class="data-table">
+            <thead>
+              <tr>
+                <th class="sortable" data-sort="artistName">Artist</th>
+                <th class="sortable" data-sort="releaseTitle">Title</th>
+                <th class="sortable" data-sort="releaseType">Type</th>
+                <th class="sortable" data-sort="submittedAt">Date</th>
+                <th class="sortable" data-sort="status">Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="allReleasesList">
+              <!-- All releases will be displayed here -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div style="text-align: right; margin-top: 10px;">
+        <input type="button" onclick="handleLogout()" class="submit" value="Logout">
+      </div>
+
+      <!-- Review Modal Container -->
+      <div id="reviewModalOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 999; overflow-y: auto;">
+        <div id="reviewModal" style="position: relative; width: 80%; max-width: 800px; margin: 30px auto; background: #5D5D5D; border: 5px solid #484848; padding: 20px; color: #EEEEEE;">
+          <div style="position: absolute; top: 10px; right: 10px;">
+            <input type="button" value="✕" onclick="closeReviewModal()" class="submit" style="padding: 5px 10px; font-size: 16px;">
+          </div>
+          <div id="reviewContent"></div>
+          <div style="margin-top: 20px; text-align: right;">
+            <input type="button" id="rejectBtn" value="Reject" onclick="rejectReleaseFromModal()" class="submit" style="margin-right: 10px;">
+            <input type="button" id="approveBtn" value="Approve" onclick="approveReleaseFromModal()" class="submit">
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Load pending releases when admin dashboard is shown
+    loadPendingReleases();
+
+    // Add event listeners for sorting
+    setupSortableColumns();
+  } else {
+    // Artist dashboard
+    leftColumn.innerHTML = `
+      <h1>Artist Dashboard</h1>
+      <p>Welcome back, ${user.email}</p>
+      <div id="dashboard-nav" style="margin: 10px 0;">
+        <dl>
+          <dd><a href="#" onclick="showTab('upload'); return false;" class="tab-btn">Upload Music</a></dd>
+          <dd><a href="#" onclick="showTab('releases'); return false;" class="tab-btn">Your Releases</a></dd>
+        </dl>
+        <div style="clear: both;"></div>
+      </div>
+      <div>
+        <div id="upload-tab" class="tab-content active">
+          <h1>Upload New Release</h1>
+          <form id="uploadForm" onsubmit="handleUpload(event)">
+          </form>
+        </div>
+
+        <div id="releases-tab" class="tab-content" style="display: none;">
+          <h1>Your Releases</h1>
+          <div class="dispBoxLeft" id="userReleases">
+            <p id="userReleasesMessage">Loading your releases...</p>
+            <div id="userReleasesList"></div>
+          </div>
+        </div>
+
+        <div style="text-align: right; margin-top: 15px;">
+          <input type="button" onclick="handleLogout()" class="submit" value="Logout">
+        </div>
+      </div>
+    `;
+
+    // Set up upload form
+    setupUploadForm();
+
+    // Mark upload tab as active by default
+    const uploadTabBtn = document.querySelector('#dashboard-nav dd a[onclick*="upload"]');
+    if (uploadTabBtn) {
+      uploadTabBtn.classList.add('active');
+    }
+
+    // Load user's releases
+    loadUserReleases(user.email);
+  }
+}
+
+// Setup artwork preview and validation
+function setupArtworkValidation() {
+  const artworkInput = document.getElementById('artwork');
+  if (artworkInput) {
+    // Create a file name display element if it doesn't exist
+    let fileNameSpan = document.getElementById('artworkFileName');
+    if (!fileNameSpan) {
+      fileNameSpan = document.createElement('span');
+      fileNameSpan.id = 'artworkFileName';
+      fileNameSpan.style.marginLeft = '10px';
+      fileNameSpan.style.fontSize = 'x-small';
+      fileNameSpan.textContent = 'No file selected';
+      artworkInput.parentNode.insertBefore(fileNameSpan, artworkInput.nextSibling);
+    }
+
+    // Create a styled upload button if it doesn't exist
+    let uploadBtn = document.querySelector('input[type="button"][onclick*="artwork"]');
+    if (!uploadBtn) {
+      uploadBtn = document.createElement('input');
+      uploadBtn.type = 'button';
+      uploadBtn.className = 'submit';
+      uploadBtn.value = 'Upload Artwork';
+      uploadBtn.style.fontFamily = 'Tahoma, Verdana, Arial, Helvetica, sans-serif';
+      uploadBtn.onclick = function() {
+        document.getElementById('artwork').click();
+      };
+      artworkInput.parentNode.insertBefore(uploadBtn, artworkInput);
+
+      // Hide the original input
+      artworkInput.style.display = 'none';
+    }
+
+    // Handle file selection
+    artworkInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        fileNameSpan.textContent = file.name;
+        validateArtwork(this);
+      } else {
+        fileNameSpan.textContent = 'No file selected';
+      }
+    });
+  }
+
+  // Set up track file inputs
+  setupTrackFileUploads();
+}
+
+// Setup track file uploads with styled buttons using submit buttons
+function setupTrackFileUploads() {
+  const trackFileInputs = document.querySelectorAll('.track-file');
+  trackFileInputs.forEach((input) => {
+    // Create a container for the file name if it doesn't exist
+    let fileNameSpan = input.nextElementSibling;
+    if (!fileNameSpan || !fileNameSpan.classList.contains('track-file-name')) {
+      fileNameSpan = document.createElement('span');
+      fileNameSpan.className = 'track-file-name';
+      fileNameSpan.style.marginLeft = '10px';
+      fileNameSpan.style.fontSize = 'x-small';
+      fileNameSpan.style.fontWeight = 'normal';
+      fileNameSpan.textContent = 'No file selected';
+      input.parentNode.insertBefore(fileNameSpan, input.nextSibling);
+    }
+
+    // Make sure the input has a unique ID
+    if (!input.id || input.id === 'audio-file-template') {
+      const trackItem = input.closest('.track-item');
+      if (trackItem) {
+        const trackId = trackItem.id.split('-').pop();
+        input.id = `audio-file-${trackId}`;
+      }
+    }
+
+    // Handle file selection
+    input.addEventListener('change', function(e) {
+      // Find the closest track-file-name span to this input
+      const nameSpan = this.parentNode.querySelector('.track-file-name');
+      if (this.files.length > 0 && nameSpan) {
+        nameSpan.textContent = this.files[0].name;
+      } else if (nameSpan) {
+        nameSpan.textContent = 'No file selected';
+      }
+    });
+  });
+}
+
+// Validate artwork dimensions
+function validateArtwork(input) {
+  const file = input.files[0];
+  const errorDiv = document.getElementById('artworkError');
+  const preview = document.getElementById('artworkPreviewImg');
+
+  // Reset error state
+  errorDiv.style.display = 'none';
+  input.setCustomValidity('');
+
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = new Image();
+      img.onload = function() {
+        // Check if image is square and at least 1500x1500
+        if (img.width !== img.height || img.width < 1500) {
+          errorDiv.style.display = 'block';
+          input.setCustomValidity('Artwork must be square and at least 1500x1500 pixels.');
+        } else {
+          // Valid image
+          errorDiv.style.display = 'none';
+          input.setCustomValidity('');
+        }
+
+        // Show the preview regardless of validation
+        preview.src = e.target.result;
+        preview.style.display = 'block';
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
   }
 }
 
@@ -730,7 +916,7 @@ async function deleteRelease(releaseId) {
 
       if (error) {
         console.error('Error deleting release from Supabase:', error.message);
-        showNotification('Error deleting release from database.', 'error');
+        alert('Error deleting release from database.');
       } else {
         // Reload the current view
         const pendingTab = document.getElementById('pending-tab');
@@ -739,11 +925,11 @@ async function deleteRelease(releaseId) {
         } else {
           loadAllReleases();
         }
-        showNotification('Release has been permanently deleted.', 'success');
+        alert('Release has been permanently deleted.');
       }
     } catch (e) {
       console.error('Error deleting release:', e);
-      showNotification('Error deleting release.', 'error');
+      alert('Error deleting release.');
     }
   }
 }
@@ -755,7 +941,6 @@ function displayPendingReleases(releases) {
 
   if (!releases || releases.length === 0) {
     noReleasesMessage.textContent = 'No pending releases found.';
-    noReleasesMessage.style.display = 'block';
     pendingReleasesList.innerHTML = '';
     return;
   }
@@ -782,8 +967,6 @@ function displayPendingReleases(releases) {
       <p style="font-size: x-small;">Tracks: ${release.tracks.length}</p>
       <div style="margin-top: 10px; text-align: right;">
         <input type="button" onclick="showReleaseReview('${release.id}')" class="submit" value="Review Release" style="margin-right: 5px;">
-        <input type="button" onclick="approveRelease('${release.id}')" class="submit" value="Approve" style="margin-right: 5px;">
-        <input type="button" onclick="rejectRelease('${release.id}')" class="submit" value="Reject">
       </div>
     `;
 
@@ -802,7 +985,7 @@ async function showReleaseReview(release) {
         const releases = await getStoredReleases();
         release = releases.find(r => r.id === release);
         if (!release) {
-            showNotification('Release not found', 'error');
+            alert('Release not found');
             return;
         }
     }
@@ -815,7 +998,7 @@ async function showReleaseReview(release) {
     const overlay = document.getElementById('reviewModalOverlay');
     const reviewContent = document.getElementById('reviewContent');
     if (!overlay || !reviewContent) {
-        showNotification('Modal not found in DOM.', 'error');
+        alert('Modal not found in DOM.');
         return;
     }
 
@@ -1067,6 +1250,30 @@ function displayUserReleases(releases, userEmail) {
   });
 }
 
+// Approve release
+async function approveRelease(releaseId) {
+  // Update status in Supabase
+  const success = await updateReleaseStatus(releaseId, 'approved');
+  if (success) {
+    loadPendingReleases();
+    alert('Release has been approved.');
+  } else {
+    alert('Failed to approve release.');
+  }
+}
+
+// Reject release
+async function rejectRelease(releaseId) {
+  // Update status in Supabase
+  const success = await updateReleaseStatus(releaseId, 'rejected');
+  if (success) {
+    loadPendingReleases();
+    alert('Release has been rejected.');
+  } else {
+    alert('Failed to reject release.');
+  }
+}
+
 // Show edit form for an approved release
 async function showEditForm(releaseId) {
   try {
@@ -1079,19 +1286,19 @@ async function showEditForm(releaseId) {
 
     if (error) {
       console.error('Error fetching release details:', error.message);
-      showNotification('Failed to fetch release details.', 'error');
+      alert('Failed to fetch release details.');
       return;
     }
 
     const release = releases[0];
     if (!release) {
-      showNotification('Release not found.', 'error');
+      alert('Release not found.');
       return;
     }
 
     const editContainer = document.getElementById(`editContainer-${releaseId}`);
     if (!editContainer) {
-      showNotification('Edit container not found.', 'error');
+      alert('Edit container not found.');
       return;
     }
 
@@ -1141,7 +1348,7 @@ async function showEditForm(releaseId) {
     editContainer.style.display = 'block';
   } catch (e) {
     console.error('Error displaying edit form:', e);
-    showNotification('An error occurred while trying to edit the release.', 'error');
+    alert('An error occurred while trying to edit the release.');
   }
 }
 
@@ -1159,7 +1366,7 @@ async function updateRelease(event, releaseId) {
 
     if (fetchError || !releases || releases.length === 0) {
       console.error('Error fetching release:', fetchError?.message);
-      showNotification('Release not found.', 'error');
+      alert('Release not found.');
       return;
     }
 
@@ -1187,7 +1394,7 @@ async function updateRelease(event, releaseId) {
 
     if (updateError) {
       console.error('Error updating release:', updateError.message);
-      showNotification('Failed to update release.', 'error');
+      alert('Failed to update release.');
       return;
     }
 
@@ -1201,10 +1408,10 @@ async function updateRelease(event, releaseId) {
     const userEmail = updatedRelease.submittedBy;
     await loadUserReleases(userEmail);
 
-    showNotification('Release has been updated.', 'success');
+    alert('Release has been updated.');
   } catch (e) {
     console.error('Error updating release:', e);
-    showNotification('An error occurred while updating the release.', 'error');
+    alert('An error occurred while updating the release.');
   }
 }
 
@@ -1247,421 +1454,615 @@ async function requestDeletion(releaseId) {
       // Reload user's releases
       const user = await supabase.auth.getUser();
       loadUserReleases(user.data.user.email);
-      showNotification('Deletion request has been submitted.', 'success');
+      alert('Deletion request has been submitted.');
     } else {
-      showNotification('Failed to request deletion.', 'error');
+      alert('Failed to request deletion.');
     }
   }
 }
 
-// Handle page load
-document.addEventListener('DOMContentLoaded', function() {
-  // Check if user is already logged in
-  checkSession();
-
-  // Setup form placeholders
-  const emailInput = document.getElementById('email');
-  const passwordInput = document.getElementById('password');
-
-  // Clear placeholders on focus if they contain default values
-  emailInput.addEventListener('focus', function() {
-    if (this.value === 'Email Address') this.value = '';
+// Switch between tabs in the artist dashboard
+function showTab(tabName) {
+  // Update tab buttons
+  const tabs = document.querySelectorAll('#dashboard-nav dd a');
+  tabs.forEach(tab => {
+    tab.classList.remove('active');
   });
 
-  passwordInput.addEventListener('focus', function() {
-    if (this.value === 'Password') this.value = '';
+  // Add active class to the clicked tab
+  const activeTab = document.querySelector(`#dashboard-nav dd a[onclick*="${tabName}"]`);
+  if (activeTab) {
+    activeTab.classList.add('active');
+  }
+
+  // Update tab content
+  document.querySelectorAll('.tab-content').forEach(content => {
+    content.style.display = 'none';
   });
 
-  // Restore placeholders on blur if empty
-  emailInput.addEventListener('blur', function() {
-    if (this.value === '') this.value = 'Email Address';
-  });
+  // Show the selected tab content
+  const tabContent = document.getElementById(`${tabName}-tab`);
+  if (tabContent) {
+    tabContent.style.display = 'block';
 
-  passwordInput.addEventListener('blur', function() {
-    if (this.value === '') this.value = 'Password';
-  });
-
-  // Add ESC key listener for closing review modal
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape' && inReviewMode) {
-      closeReviewModal();
+    // If it's the upload tab, make sure we have the upload form
+    if (tabName === 'upload') {
+      setupUploadForm();
     }
-  });
-
-  // Initialize Supabase storage bucket if needed
-  initializeStorage();
-});
-
-// Check if user is already logged in
-async function checkSession() {
-  const { data: { session } } = await supabase.auth.getSession();
-
-  if (session) {
-    // Check if user is admin or artist
-    const isAdmin = session.user.email.toLowerCase() === '1@elujj.in';
-
-    // User is logged in, redirect to dashboard content or show logged-in state
-    showLoggedInState(session.user, isAdmin);
   }
 }
 
-// Handle login form submission
-async function handleLogin(event) {
-  event.preventDefault();
+// Setup the upload form with proper fields
+function setupUploadForm() {
+  const uploadTab = document.getElementById('upload-tab');
+  if (!uploadTab) return;
 
-  const email = document.getElementById('email').value;
-  const password = document.getElementById('password').value;
-
-  // Display loading state
-  const authMessage = document.getElementById('authMessage');
-  authMessage.className = 'info';
-  authMessage.innerHTML = 'Processing...';
-
-  try {
-    // Handle login
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: email,
-      password: password
-    });
-
-    if (error) throw error;
-
-    // Login successful
-    authMessage.className = 'success';
-    authMessage.innerHTML = 'Login successful!';
-
-    // Check if user is admin or artist
-    const isAdmin = email.toLowerCase() === '1@elujj.in';
-
-    // Show appropriate dashboard based on user type
-    showLoggedInState(data.user, isAdmin);
-  } catch (error) {
-    authMessage.className = 'error';
-    authMessage.innerHTML = `Error: ${error.message}`;
+  // Check if the form already has content
+  if (uploadTab.querySelector('form').innerHTML.trim() !== '... (form HTML unchanged for brevity) ...') {
+    // Form already set up
+    return;
   }
-}
 
-// Update the payouts section to remove "Last Month Earnings"
-const updatedRevenueSummary = `
-<div style="background: #5D5D5D; border: 5px solid #484848; padding: 15px; margin-bottom: 20px;">
-  <h3 class="pCase" style="margin-top: 0; margin-bottom: 15px;">Revenue Summary</h3>
-  <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-    <div>
-      <p style="margin: 0; font-size: small; color: #BFED46;">Current Balance</p>
-      <p style="margin: 5px 0 0 0; font-size: x-large; font-weight: bold;">$0.00</p>
-    </div>
-    <div>
-      <p style="margin: 0; font-size: small; color: #BFED46;">Total Earnings</p>
-      <p style="margin: 5px 0 0 0; font-size: x-large; font-weight: bold;">$0.00</p>
-    </div>
-  </div>
-  <div style="text-align: right; margin-top: 10px;">
-    <input type="button" value="Request Payout" class="submit">
-  </div>
-</div>
-`;
-
-// Two-Factor Authentication HTML section (modified to show "Coming Soon")
-const twoFactorAuthHTML = `
-  <div style="background: #484848; border: 1px solid #666; padding: 15px; margin-bottom: 20px;">
-    <h3 class="pCase" style="margin-top: 0;">Two-Factor Authentication</h3>
-    <div id="twoFactorAuth">
-      <p style="margin-bottom: 10px;">Enhance your account security by enabling two-factor authentication.</p>
-      <div style="background: #5D5D5D; padding: 10px; margin: 10px 0; border: 1px solid #666;">
-        <p style="color: #BFED46;">Coming Soon</p>
-        <p style="margin-top: 5px;">Two-factor authentication is currently under development and will be available soon.</p>
+  // Set up the upload form
+  const uploadForm = uploadTab.querySelector('form');
+  uploadForm.innerHTML = `
+    <div class="dispBoxLeft">
+      <p class="pCase" style="font-size: x-small; color: #BFED46;">Release Information</p>
+      <div class="form-row">
+        <div style="margin-bottom: 10px;">
+          <p class="pCase">Artist Name*</p>
+          <input type="text" id="artistName" name="artistName" class="newsletterInput" required style="font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif; color: #FFFFFF;">
+        </div>
+        <div style="margin-bottom: 10px;">
+          <p class="pCase">Release Title*</p>
+          <input type="text" id="releaseTitle" name="releaseTitle" class="newsletterInput" required style="font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif; color: #FFFFFF;">
+        </div>
       </div>
-    </div>
-  </div>
-`;
-
-// Show the logged in state
-function showLoggedInState(user, isAdmin) {
-  // Profile Information HTML (artist bio removed)
-  const profileSectionHTML = `
-    <div style="background: #484848; border: 1px solid #666; padding: 15px; margin-bottom: 20px; display: flex; align-items: flex-start;">
-      <div style="flex: 0 0 120px; margin-right: 20px;">
-        <div id="profileImageContainer" style="width: 120px; height: 120px; background: #333; border: 1px solid #555; overflow: hidden; position: relative;">
-          <img id="profileImage" src="asset/image/default-profile.png" alt="Profile" style="width: 100%; height: 100%; object-fit: cover;">
-          <div id="profileImageOverlay" style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; text-align: center; padding: 4px; cursor: pointer; font-size: 10px;">
-            Change Photo
+      <div class="form-row">
+        <div style="margin-bottom: 10px;">
+          <p class="pCase">Release Type*</p>
+          <select id="releaseType" name="releaseType" class="newsletterInput" required onchange="toggleTracksSection()" style="width: 278px; background: url('../../image/inputTextBg.gif') top left repeat-x; color: #FFFFFF; height: 22px; font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif;">
+            <option value="">Select Type</option>
+            <option value="single">Single</option>
+            <option value="ep">EP</option>
+            <option value="album">Album</option>
+          </select>
+        </div>
+        <div style="margin-bottom: 10px;">
+          <p class="pCase">Release Date*</p>
+          <input type="date" id="releaseDate" name="releaseDate" class="newsletterInput" required style="font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif; color: #FFFFFF;">
+        </div>
+      </div>
+      <div class="form-row">
+        <div style="margin-bottom: 10px;">
+          <p class="pCase">Primary Genre*</p>
+          <select id="primaryGenre" name="primaryGenre" class="newsletterInput" required style="width: 278px; background: url('../../image/inputTextBg.gif') top left repeat-x; color: #FFFFFF; height: 22px; font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif;">
+            <option value="">Select Genre</option>
+            <option value="electronic">Electronic</option>
+            <option value="rock">Rock</option>
+            <option value="pop">Pop</option>
+            <option value="rap">Rap/Hip-Hop</option>
+            <option value="rnb">R&B</option>
+            <option value="jazz">Jazz</option>
+            <option value="classical">Classical</option>
+            <option value="country">Country</option>
+            <option value="folk">Folk</option>
+            <option value="latin">Latin</option>
+            <option value="world">World</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div style="margin-bottom: 10px;">
+          <p class="pCase">Secondary Genre (Optional)</p>
+          <select id="secondaryGenre" name="secondaryGenre" class="newsletterInput" style="width: 278px; background: url('../../image/inputTextBg.gif') top left repeat-x; color: #FFFFFF; height: 22px; font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif;">
+            <option value="">Select Genre (Optional)</option>
+            <option value="electronic">Electronic</option>
+            <option value="rock">Rock</option>
+            <option value="pop">Pop</option>
+            <option value="rap">Rap/Hip-Hop</option>
+            <option value="rnb">R&B</option>
+            <option value="jazz">Jazz</option>
+            <option value="classical">Classical</option>
+            <option value="country">Country</option>
+            <option value="folk">Folk</option>
+            <option value="latin">Latin</option>
+            <option value="world">World</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div style="margin-bottom: 10px;">
+          <p class="pCase">Explicit Content*</p>
+          <div style="display: flex; gap: 20px; margin-top: 5px;">
+            <label style="display: flex; align-items: center; gap: 5px; color: #EEEEEE; font-size: x-small; font-weight: normal;">
+              <input type="radio" name="explicit" value="no" checked> No
+            </label>
+            <label style="display: flex; align-items: center; gap: 5px; color: #EEEEEE; font-size: x-small; font-weight: normal;">
+              <input type="radio" name="explicit" value="yes"> Yes
+            </label>
           </div>
         </div>
-        <input type="file" id="profileImageUpload" style="display: none;" accept="image/*">
-      </div>
-      <div style="flex: 1;">
-        <h3 class="pCase" style="margin-top: 0;">Profile Information</h3>
         <div style="margin-bottom: 10px;">
-          <p class="pCase">Artist Name</p>
-          <input type="text" id="artistNameInput" class="newsletterInput">
-        </div>
-        <div style="text-align: right; margin-top: 10px;">
-          <input type="button" value="Update Profile" class="submit" onclick="updateProfile()">
+          <p class="pCase">YouTube Content ID*</p>
+          <div style="display: flex; gap: 20px; margin-top: 5px;">
+            <label style="display: flex; align-items: center; gap: 5px; color: #EEEEEE; font-size: x-small; font-weight: normal;">
+              <input type="radio" name="youtubeContentId" value="no" checked> No
+            </label>
+            <label style="display: flex; align-items: center; gap: 5px; color: #EEEEEE; font-size: x-small; font-weight: normal;">
+              <input type="radio" name="youtubeContentId" value="yes"> Yes
+            </label>
+          </div>
         </div>
       </div>
+      <div class="form-row">
+        <div class="form-group half">
+          <p class="pCase">Original Release Date (if previously released)</p>
+          <input type="date" id="ogReleaseDate" name="ogReleaseDate" class="newsletterInput" style="font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif; color: #FFFFFF;">
+        </div>
+        <div class="form-group half">
+          <p class="pCase">License*</p>
+          <div style="display: flex; gap: 20px; margin-top: 5px;">
+            <label style="display: flex; align-items: center; gap: 5px; color: #EEEEEE; font-size: x-small; font-weight: normal; font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif;">
+              <input type="radio" name="license" value="arr" checked> All Rights Reserved
+            </label>
+            <label style="display: flex; align-items: center; gap: 5px; color: #EEEEEE; font-size: x-small; font-weight: normal; font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif;">
+              <input type="radio" name="license" value="cc"> Creative Commons
+            </label>
+          </div>
+        </div>
+      </div>
+      <div>
+        <p class="pCase">Cover Artwork* (Must be square, 1500x1500px minimum)</p>
+        <div>
+          <input type="button" class="submit" value="Upload Artwork" onclick="document.getElementById('artwork').click()" style="font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif;">
+          <span id="artworkFileName" style="margin-left: 10px; font-size: x-small; font-weight: normal;">No file selected</span>
+        </div>
+        <input type="file" id="artwork" name="artwork" accept="image/*" required style="display: none;">
+        <div style="margin: 10px 0; border: 5px solid #484848; width: 150px; height: 150px; background: #333; display: flex; justify-content: center; align-items: center; overflow: hidden;">
+          <img id="artworkPreviewImg" style="display: none; max-width: 100%; max-height: 100%;" alt="Artwork Preview">
+        </div>
+        <div id="artworkError" style="color: #FF6B6B; display: none; font-size: x-small;">
+          Artwork must be square and at least 1500x1500 pixels.
+        </div>
+      </div>
+    </div>
+
+    <div class="dispBoxLeft" id="tracks-section" style="display: none;">
+      <p class="pCase" style="font-size: x-small; color: #BFED46;">Track Information</p>
+      <div id="tracks-container">
+        <!-- Track items will be added here -->
+        <div id="track-template" class="track-item" style="margin-bottom: 15px; padding: 10px; background: #5D5D5D; border: 5px solid #484848;">
+          <p class="pCase" style="margin-bottom: 10px;">Track 1</p>
+          <div style="margin-bottom: 10px;">
+            <p class="pCase">Track Name*</p>
+            <input type="text" class="newsletterInput track-name" required style="font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif; color: #FFFFFF;">
+          </div>
+          <div style="margin-bottom: 10px;">
+            <p class="pCase">ISRC (if available)</p>
+            <input type="text" class="newsletterInput track-isrc" placeholder="e.g., USRC17607839" style="font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif; color: #FFFFFF;">
+          </div>
+          <div>
+            <p class="pCase">Audio File*</p>
+            <div>
+              <input type="button" class="submit" value="Upload Audio File" onclick="document.getElementById('audio-file-'+this.closest('.track-item').id.split('-').pop()).click()" style="font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif;">
+              <span class="track-file-name" style="margin-left: 10px; font-size: x-small; font-weight: normal;">No file selected</span>
+            </div>
+            <input id="audio-file-template" type="file" class="track-file" accept="audio/*" required style="display: none;">
+          </div>
+        </div>
+      </div>
+      <div id="multiple-tracks-controls" style="display: none; margin-top: 10px;">
+        <input type="button" id="add-track-btn" onclick="addTrackItem()" class="submit" value="Add Another Track" style="font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif;">
+      </div>
+    </div>
+
+    <div class="dispBoxLeft">
+      <p class="pCase" style="font-size: x-small; color: #BFED46;">Additional Information</p>
+      <div class="form-row">
+        <div class="form-group half">
+          <p class="pCase">UPC (if you have one)</p>
+          <input type="text" id="upc" name="upc" class="newsletterInput" placeholder="e.g., 123456789012" style="font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif; color: #FFFFFF;">
+        </div>
+        <div class="form-group half">
+          <p class="pCase">Featured Artists (if any)</p>
+          <input type="text" id="featuredArtists" name="featuredArtists" class="newsletterInput" placeholder="e.g., DJ XYZ, Singer ABC" style="font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif; color: #FFFFFF;">
+        </div>
+      </div>
+      <div class="form-group">
+        <p class="pCase">Primary Artists (if different from artist name)</p>
+        <input type="text" id="primaryArtists" name="primaryArtists" class="newsletterInput" placeholder="Separate multiple artists with commas" style="font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif; color: #FFFFFF;">
+      </div>
+      <div class="form-group">
+        <p class="pCase">Credits</p>
+        <textarea id="credits" name="credits" class="newsletterInput" rows="4" placeholder="Music by..., Lyrics by..., etc." style="font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif; color: #FFFFFF;"></textarea>
+      </div>
+      <div class="form-group">
+        <p class="pCase">Additional Notes</p>
+        <textarea id="notes" name="notes" class="newsletterInput" rows="4" placeholder="Any additional information..." style="font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif; color: #FFFFFF;"></textarea>
+      </div>
+    </div>
+
+    <div style="text-align: right; margin-top: 15px;">
+      <input type="submit" class="submit" value="Submit Release" style="font-family: Tahoma, Verdana, Arial, Helvetica, sans-serif;">
     </div>
   `;
 
-  // Insert profileSectionHTML and twoFactorAuthHTML into the DOM as needed
-  // For demonstration, let's assume there's a container with id 'accountTabContent'
-  const accountTabContent = document.getElementById('accountTabContent');
-  if (accountTabContent) {
-    accountTabContent.innerHTML = profileSectionHTML + twoFactorAuthHTML;
-  }
-
-  // Setup account tab (artist bio removed)
-  setupAccountTab(user);
+  // Setup event listeners for the form
+  setupArtworkValidation();
 }
 
-// Update profile info (artist bio removed)
-async function updateProfile() {
-  const artistName = document.getElementById('artistNameInput').value;
-  const userEmail = document.getElementById('userEmail').textContent;
+// Toggle tracks section based on release type
+function toggleTracksSection() {
+  const releaseType = document.getElementById('releaseType').value;
+  const tracksSection = document.getElementById('tracks-section');
+  const multipleTracksControls = document.getElementById('multiple-tracks-controls');
+  const trackHeader = document.querySelector('.track-item h4');
+
+  if (releaseType === '') {
+    tracksSection.style.display = 'none';
+    return;
+  }
+
+  tracksSection.style.display = 'block';
+
+  if (releaseType === 'single') {
+    trackHeader.textContent = 'Single Track';
+    multipleTracksControls.style.display = 'none';
+  } else {
+    trackHeader.textContent = 'Track 1';
+    multipleTracksControls.style.display = 'block';
+
+    // Make sure we have at least one track
+    if (document.querySelectorAll('.track-item').length === 0) {
+      addTrackItem();
+    }
+  }
+}
+
+// Track counter for unique IDs
+let trackCounter = 1;
+
+// Add a new track item to the tracks container
+function addTrackItem() {
+  const tracksContainer = document.getElementById('tracks-container');
+  const trackTemplate = document.getElementById('track-template');
+
+  // Create a clone of the template
+  const newTrack = trackTemplate.cloneNode(true);
+  const trackId = trackCounter; // Save counter value for this track
+
+  // Update the ID and labels
+  newTrack.id = `track-item-${trackId}`;
+
+  // Update track header
+  const header = newTrack.querySelector('p.pCase');
+  header.textContent = `Track ${trackId + 1}`;
+
+  // Update audio file input ID
+  const fileInput = newTrack.querySelector('.track-file');
+  fileInput.id = `audio-file-${trackId}`;
+
+  // Add remove button if not the first track
+  if (trackId > 0) {
+    // Create remove button
+    const removeBtn = document.createElement('input');
+    removeBtn.type = 'button';
+    removeBtn.className = 'submit';
+    removeBtn.value = 'Remove';
+    removeBtn.style.marginLeft = '10px';
+    removeBtn.style.fontSize = 'xx-small';
+    removeBtn.style.padding = '0 5px';
+    removeBtn.style.fontFamily = 'Tahoma, Verdana, Arial, Helvetica, sans-serif';
+    removeBtn.onclick = function() {
+      tracksContainer.removeChild(newTrack);
+      renumberTracks();
+    };
+
+    // Insert after the header
+    header.parentNode.insertBefore(removeBtn, header.nextSibling);
+  }
+
+  // Update input IDs and labels
+  const inputs = newTrack.querySelectorAll('input[type="text"]');
+  inputs.forEach(input => {
+    const oldId = input.id || '';
+    if (oldId) {
+      const baseName = oldId.substring(0, oldId.lastIndexOf('-'));
+      const newId = `${baseName}-${trackId}`;
+      input.id = newId;
+    }
+  });
+
+  // Update the upload button click handler to reference the new file input ID
+  const uploadBtn = newTrack.querySelector('input[type="button"]');
+  if (uploadBtn) {
+    uploadBtn.onclick = function() {
+      document.getElementById(`audio-file-${trackId}`).click();
+    };
+  }
+
+  // Append the new track
+  tracksContainer.appendChild(newTrack);
+  trackCounter++;
+
+  // Ensure the file inputs are set up correctly
+  setupTrackFileUploads();
+}
+
+// Renumber tracks after removing one
+function renumberTracks() {
+  const tracks = document.querySelectorAll('.track-item');
+  tracks.forEach((track, index) => {
+    // Update header text
+    const header = track.querySelector('h4');
+    header.textContent = `Track ${index + 1}`;
+  });
+}
+
+// Handle the upload form submission
+async function handleUpload(event) {
+  event.preventDefault();
+
+  // Show loading state
+  const submitBtn = event.target.querySelector('input[type="submit"]');
+  const originalBtnValue = submitBtn.value;
+  submitBtn.value = 'Uploading...';
+  submitBtn.disabled = true;
 
   try {
-    // Save to Supabase
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        artist_name: artistName,
-        updated_at: new Date().toISOString()
-      })
-      .eq('user_email', userEmail);
+    // Validate artwork
+    const artworkInput = document.getElementById('artwork');
+    const errorDiv = document.getElementById('artworkError');
 
-    if (error) {
-      throw error;
+    // Check if artwork validation has failed
+    if (artworkInput.validity.customError) {
+      errorDiv.style.display = 'block';
+      artworkInput.focus();
+      throw new Error('Artwork validation failed');
     }
 
-    // Also save to localStorage as backup
-    localStorage.setItem('artistProfile_' + userEmail, JSON.stringify({
-      artistName
-    }));
+    // Get basic form values
+    const artistName = document.getElementById('artistName').value;
+    const releaseTitle = document.getElementById('releaseTitle').value;
+    const releaseType = document.getElementById('releaseType').value;
+    const primaryGenre = document.getElementById('primaryGenre').value;
+    const secondaryGenre = document.getElementById('secondaryGenre').value;
+    const explicit = document.querySelector('input[name="explicit"]:checked').value;
+    const youtubeContentId = document.querySelector('input[name="youtubeContentId"]:checked').value;
+    const releaseDate = document.getElementById('releaseDate').value;
+    const ogReleaseDate = document.getElementById('ogReleaseDate').value;
+    const license = document.querySelector('input[name="license"]:checked').value;
+    const featuredArtists = document.getElementById('featuredArtists').value;
+    const primaryArtists = document.getElementById('primaryArtists').value;
+    const upc = document.getElementById('upc').value;
+    const credits = document.getElementById('credits').value;
+    const notes = document.getElementById('notes').value;
 
-    showNotification('Profile updated successfully!', 'success');
-  } catch (e) {
-    console.error('Error updating profile:', e);
+    // Create unique folder for this release
+    const releaseId = Date.now().toString();
+    const userEmail = (await supabase.auth.getUser()).data.user.email;
+    const folderPath = `releases/${userEmail}/${releaseId}`;
 
-    // Fall back to localStorage only
-    localStorage.setItem('artistProfile_' + userEmail, JSON.stringify({
-      artistName
-    }));
+    // Variables to store artwork data
+    let artworkDataUrl = '';
+    let artworkUrl = '';
 
-    showNotification('Profile updated locally. Server update failed.', 'warning');
-  }
-}
+    // Get artwork data URL regardless of Supabase upload
+    if (artworkInput.files && artworkInput.files[0]) {
+      const artworkFile = artworkInput.files[0];
 
-// Setup account tab (artist bio removed)
-function setupAccountTab(user) {
-  // Load profile info from Supabase
-  const artistNameInput = document.getElementById('artistNameInput');
-  const profileImage = document.getElementById('profileImage');
-
-  try {
-    // Get profile from Supabase
-    supabase
-      .from('profiles')
-      .select('*')
-      .eq('user_email', user.email)
-      .limit(1)
-      .then(({ data: profiles, error }) => {
-        if (error) {
-          throw error;
-        }
-
-        if (profiles && profiles.length > 0) {
-          const profile = profiles[0];
-
-          // Fill form fields
-          if (artistNameInput) artistNameInput.value = profile.artist_name || '';
-
-          // Set profile image if available
-          if (profile.profile_image_url && profileImage) {
-            profileImage.src = profile.profile_image_url;
-          }
-
-          // 2FA section is now always "Coming Soon"
-        } else {
-          // Fall back to localStorage if no profile in database
-          const localProfile = JSON.parse(localStorage.getItem('artistProfile_' + user.email) || '{}');
-          if (artistNameInput) artistNameInput.value = localProfile.artistName || '';
-        }
-      })
-      .catch(e => {
-        console.error('Error loading profile:', e);
-
-        // Fall back to localStorage
-        const localProfile = JSON.parse(localStorage.getItem('artistProfile_' + user.email) || '{}');
-        if (artistNameInput) artistNameInput.value = localProfile.artistName || '';
+      // Always get the data URL for local display
+      const reader = new FileReader();
+      artworkDataUrl = await new Promise(resolve => {
+        reader.onload = e => resolve(e.target.result);
+        reader.readAsDataURL(artworkFile);
       });
-  } catch (e) {
-    console.error('Error loading profile:', e);
 
-    // Fall back to localStorage
-    const localProfile = JSON.parse(localStorage.getItem('artistProfile_' + user.email) || '{}');
-    if (artistNameInput) artistNameInput.value = localProfile.artistName || '';
+      // Try to upload to Supabase, but continue even if it fails
+      try {
+        const artworkPath = `${folderPath}/artwork.${getFileExtension(artworkFile.name)}`;
+
+        // Try to create bucket if it doesn't exist
+        try {
+          const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
+          if (bucketError) {
+            console.error('Error checking buckets:', bucketError.message);
+          } else {
+            const musicBucketExists = buckets.some(bucket => bucket.name === 'music');
+            if (!musicBucketExists) {
+              const { error: createError } = await supabase.storage.createBucket('music', {
+                public: true
+              });
+              if (createError) {
+                console.error('Error creating music bucket:', createError.message);
+              } else {
+                console.log('Music storage bucket created successfully');
+              }
+            }
+          }
+        } catch (bucketErr) {
+          console.error('Failed to check/create bucket:', bucketErr);
+        }
+
+        // Try to upload the file
+        const { data: artworkData, error: artworkError } = await supabase.storage
+          .from('music')
+          .upload(artworkPath, artworkFile, {
+            cacheControl: '3600',
+            upsert: true
+          });
+
+        if (artworkError) {
+          console.error(`Artwork upload failed: ${artworkError.message}`);
+          // Continue with data URL only
+        } else {
+          // Get public URL
+          const { data: urlData } = supabase.storage.from('music').getPublicUrl(artworkPath);
+          artworkUrl = urlData.publicUrl;
+          console.log('Artwork uploaded successfully:', artworkUrl);
+        }
+      } catch (uploadErr) {
+        console.error('Artwork upload error:', uploadErr);
+        // Continue with data URL only
+      }
+    }
+
+    // Collect track data and upload audio files
+    const tracks = [];
+    const trackItems = document.querySelectorAll('.track-item');
+
+    for (let i = 0; i < trackItems.length; i++) {
+      const trackItem = trackItems[i];
+      const trackName = trackItem.querySelector('.track-name').value;
+      const trackIsrc = trackItem.querySelector('.track-isrc').value;
+      const trackFileInput = trackItem.querySelector('.track-file');
+
+      // Variables to store track audio data
+      let audioUrl = '';
+      let fileName = '';
+      let audioDataUrl = '';
+
+      if (trackFileInput.files && trackFileInput.files[0]) {
+        const audioFile = trackFileInput.files[0];
+        fileName = audioFile.name;
+
+        // Get audio data URL
+        const reader = new FileReader();
+        audioDataUrl = await new Promise(resolve => {
+          reader.onload = e => resolve(e.target.result);
+          reader.readAsDataURL(audioFile);
+        });
+
+        // Try to upload to Supabase, but continue even if it fails
+        try {
+          const sanitizedTrackName = trackName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+          const trackPath = `${folderPath}/track_${i+1}_${sanitizedTrackName}.${getFileExtension(fileName)}`;
+
+          const { data: audioData, error: audioError } = await supabase.storage
+            .from('music')
+            .upload(trackPath, audioFile, {
+              cacheControl: '3600',
+              upsert: true
+            });
+
+          if (audioError) {
+            console.error(`Audio upload failed: ${audioError.message}`);
+            // Continue with data URL only
+          } else {
+            // Get public URL
+            const { data: urlData } = supabase.storage.from('music').getPublicUrl(trackPath);
+            audioUrl = urlData.publicUrl;
+            console.log('Audio uploaded successfully:', audioUrl);
+          }
+        } catch (uploadErr) {
+          console.error('Audio upload error:', uploadErr);
+          // Continue with data URL only
+        }
+      }
+
+      tracks.push({
+        position: i + 1,
+        name: trackName,
+        isrc: trackIsrc || null,
+        fileName: fileName,
+        audioUrl: audioUrl,
+        audioDataUrl: audioDataUrl // Store the data URL as backup
+      });
+    }
+
+    // Create release object with all form data
+    const releaseData = {
+      id: releaseId,
+      artistName,
+      releaseTitle,
+      releaseType,
+      primaryGenre,
+      secondaryGenre,
+      explicit,
+      youtubeContentId,
+      releaseDate,
+      ogReleaseDate,
+      license,
+      featuredArtists,
+      primaryArtists,
+      upc,
+      credits,
+      notes,
+      tracks,
+      artworkDataUrl,
+      artworkUrl,
+      submittedBy: userEmail,
+      status: 'pending',
+      submittedAt: new Date().toISOString()
+    };
+
+    // Store the release in Supabase
+    try {
+      const { data, error } = await supabase
+        .from('releases')
+        .insert([releaseData]);
+
+      if (error) {
+        console.error('Error saving to Supabase:', error);
+        // Fall back to localStorage if Supabase fails
+        const existingReleases = await getStoredReleases();
+        existingReleases.push(releaseData);
+        await saveReleasesToStorage(existingReleases);
+      } else {
+        console.log('Release saved to Supabase successfully');
+      }
+    } catch (dbError) {
+      console.error('Database error:', dbError);
+      // Fall back to localStorage
+      const existingReleases = await getStoredReleases();
+      existingReleases.push(releaseData);
+      await saveReleasesToStorage(existingReleases);
+    }
+
+    alert('Release submitted for approval!');
+    document.getElementById('uploadForm').reset();
+
+    // Clear the artwork preview
+    const previewImg = document.getElementById('artworkPreviewImg');
+    if (previewImg) {
+      previewImg.style.display = 'none';
+      previewImg.src = '';
+    }
+
+    // Reset file name displays
+    document.getElementById('artworkFileName').textContent = 'No file selected';
+    document.querySelectorAll('.track-file-name').forEach(span => {
+      span.textContent = 'No file selected';
+    });
+
+    // If the user is viewing their releases, refresh the list
+    if (document.getElementById('releases-tab').style.display !== 'none') {
+      loadUserReleases(releaseData.submittedBy);
+    }
+  } catch (error) {
+    console.error('Upload error:', error);
+    alert('Error: ' + error.message);
+  } finally {
+    // Reset button state
+    submitBtn.value = originalBtnValue;
+    submitBtn.disabled = false;
   }
 }
 
-// Two-Factor Authentication section (temporarily disabled)
-function setupTwoFactor() {
-  showNotification('Two-factor authentication is currently under development.', 'info');
-}
+// Handle logout
+async function handleLogout() {
+  const { error } = await supabase.auth.signOut();
 
-async function enableTwoFactor() {
-  showNotification('Two-factor authentication is currently under development.', 'info');
-}
-
-async function disableTwoFactor() {
-  showNotification('Two-factor authentication is currently under development.', 'info');
+  if (error) {
+    console.error('Error logging out:', error.message);
+  } else {
+    // Reload the page to show login form again
+    window.location.reload();
+  }
 }
 
 // Helper function to get file extension
 function getFileExtension(filename) {
   return filename.slice((filename.lastIndexOf('.') - 1 >>> 0) + 2).toLowerCase();
-}
-
-// Change password functionality
-async function changePassword() {
-  const currentPassword = document.getElementById('currentPassword').value;
-  const newPassword = document.getElementById('newPassword').value;
-  const confirmPassword = document.getElementById('confirmPassword').value;
-
-  if (!currentPassword || !newPassword || !confirmPassword) {
-    showNotification('Please fill in all password fields.', 'error');
-    return;
-  }
-
-  if (newPassword.length < 6) {
-    showNotification('New password must be at least 6 characters long.', 'error');
-    return;
-  }
-
-  if (newPassword !== confirmPassword) {
-    showNotification('New passwords do not match.', 'error');
-    return;
-  }
-
-  // Button state
-  const updateBtn = document.querySelector('#changePasswordForm input[type="button"]');
-  if (updateBtn) {
-    updateBtn.disabled = true;
-    updateBtn.value = 'Updating...';
-  }
-
-  try {
-    // Get current user
-    const { data, error: userError } = await supabase.auth.getUser();
-    if (userError || !data || !data.user) {
-      showNotification('Could not get user session. Please log in again.', 'error');
-      console.log("User session error:", userError);
-      return;
-    }
-
-    const user = data.user;
-    console.log("Got user session for:", user.email);
-
-    // Re-authenticate user with current password
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: user.email,
-      password: currentPassword
-    });
-
-    if (signInError) {
-      showNotification('Current password is incorrect.', 'error');
-      console.log("Sign in error:", signInError);
-      return;
-    }
-
-    console.log("Re-authentication successful");
-
-    // Update password
-    const { error: updateError } = await supabase.auth.updateUser({
-      password: newPassword
-    });
-
-    if (updateError) {
-      showNotification('Failed to update password: ' + updateError.message, 'error');
-      console.log("Update error:", updateError);
-      return;
-    }
-
-    console.log("Password update successful");
-    showNotification('Password updated successfully!', 'success');
-    document.getElementById('currentPassword').value = '';
-    document.getElementById('newPassword').value = '';
-    document.getElementById('confirmPassword').value = '';
-  } catch (e) {
-    showNotification('An error occurred while updating password.', 'error');
-    console.error("Password update exception:", e);
-  } finally {
-    // Reset button state
-    if (updateBtn) {
-      updateBtn.disabled = false;
-      updateBtn.value = 'Update Password';
-    }
-  }
-}
-
-// Email change
-async function changeEmail() {
-  const newEmail = document.getElementById('newEmail').value;
-  const password = document.getElementById('emailChangePassword').value;
-  const currentEmail = document.getElementById('currentEmail').textContent;
-
-  if (!newEmail || !password) {
-    showNotification('Please fill in all fields.', 'error');
-    return;
-  }
-  if (newEmail === currentEmail) {
-    showNotification('New email must be different.', 'error');
-    return;
-  }
-
-  // Button state
-  const updateBtn = document.querySelector('#changeEmailForm input[type="button"]');
-  if (updateBtn) {
-    updateBtn.disabled = true;
-    updateBtn.value = 'Updating...';
-  }
-
-  try {
-    // Re-authenticate
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: currentEmail,
-      password: password
-    });
-
-    if (signInError) {
-      showNotification('Current password is incorrect.', 'error');
-      console.log("Sign in error:", signInError);
-      return;
-    }
-
-    console.log("Re-authentication successful");
-
-    // Update email
-    const { error: updateError } = await supabase.auth.updateUser({
-      email: newEmail
-    });
-
-    if (updateError) {
-      showNotification('Failed to update email: ' + updateError.message, 'error');
-      console.log("Update error:", updateError);
-      return;
-    }
-
-    console.log("Email update request sent");
-    showNotification('Email update requested. Please check your new email for a confirmation link.', 'success');
-    document.getElementById('newEmail').value = '';
-    document.getElementById('emailChangePassword').value = '';
-  } catch (e) {
-    showNotification('An error occurred while updating email.', 'error');
-    console.error("Email update exception:", e);
-  } finally {
-    // Reset button state
-    if (updateBtn) {
-      updateBtn.disabled = false;
-      updateBtn.value = 'Update Email';
-    }
-  }
 }
