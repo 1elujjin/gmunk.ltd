@@ -1666,6 +1666,9 @@ function showLoggedInState(user, isAdmin) {
       </div>
     `;
 
+    // Set up upload form
+    setupUploadForm();
+
     // Load user's releases
     loadUserReleases(user.email);
 
@@ -2671,9 +2674,6 @@ function setupUploadForm() {
 
   console.log('Upload form fully initialized with event listeners.');
 }
-
-// Call setupUploadForm on DOMContentLoaded
-document.addEventListener('DOMContentLoaded', setupUploadForm);
 
 // Toggle tracks section based on release type
 function toggleTracksSection() {
