@@ -1666,9 +1666,6 @@ function showLoggedInState(user, isAdmin) {
       </div>
     `;
 
-    // Set up upload form
-    setupUploadForm();
-
     // Load user's releases
     loadUserReleases(user.email);
 
