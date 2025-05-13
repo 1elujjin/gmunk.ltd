@@ -2675,6 +2675,9 @@ function setupUploadForm() {
   console.log('Upload form fully initialized with event listeners.');
 }
 
+// Call setupUploadForm on DOMContentLoaded
+document.addEventListener('DOMContentLoaded');
+
 // Toggle tracks section based on release type
 function toggleTracksSection() {
   const releaseType = document.getElementById('releaseType').value;
