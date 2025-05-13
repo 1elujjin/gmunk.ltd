@@ -373,8 +373,6 @@ async function handleLogin(event) {
   }
 }
 
-// No toggleAuthMode function needed for invite-only
-
 // Show the logged in state
 function showLoggedInState(user, isAdmin) {
   const leftColumn = document.getElementById('leftColumn');
@@ -498,34 +496,141 @@ function showLoggedInState(user, isAdmin) {
     // Add event listeners for sorting
     setupSortableColumns();
   } else {
-    // Artist dashboard
+    // Artist dashboard with new sidebar layout
     leftColumn.innerHTML = `
       <h1>Artist Dashboard</h1>
       <p>Welcome back, ${user.email}</p>
-      <div id="dashboard-nav" style="margin: 10px 0;">
-        <dl>
-          <dd><a href="#" onclick="showTab('upload'); return false;" class="tab-btn">Upload Music</a></dd>
-          <dd><a href="#" onclick="showTab('releases'); return false;" class="tab-btn">Your Releases</a></dd>
-        </dl>
-        <div style="clear: both;"></div>
-      </div>
-      <div>
-        <div id="upload-tab" class="tab-content active">
-          <h1>Upload New Release</h1>
-          <form id="uploadForm" onsubmit="handleUpload(event)">
-          </form>
-        </div>
 
-        <div id="releases-tab" class="tab-content" style="display: none;">
-          <h1>Your Releases</h1>
-          <div class="dispBoxLeft" id="userReleases">
-            <p id="userReleasesMessage">Loading your releases...</p>
-            <div id="userReleasesList"></div>
+      <div style="display: flex; margin-top: 20px;">
+        <!-- Left sidebar -->
+        <div class="dispBoxLeft" style="width: 200px; margin-right: 20px; padding: 15px; background: #5D5D5D; border: 5px solid #484848;">
+          <div id="dashboard-nav">
+            <h3 class="pCase" style="margin-top: 0; margin-bottom: 15px;">Dashboard Menu</h3>
+            <dl style="margin: 0;">
+              <dd style="margin: 0 0 10px 0;"><a href="#" onclick="showTab('upload'); return false;" class="tab-btn active">Upload Music</a></dd>
+              <dd style="margin: 0 0 10px 0;"><a href="#" onclick="showTab('releases'); return false;" class="tab-btn">Your Releases</a></dd>
+              <dd style="margin: 0 0 10px 0;"><a href="#" onclick="showTab('tickets'); return false;" class="tab-btn">Support Tickets</a></dd>
+              <dd style="margin: 0 0 10px 0;"><a href="#" onclick="showTab('payouts'); return false;" class="tab-btn">Payouts & Finance</a></dd>
+            </dl>
+          </div>
+
+          <div style="margin-top: 20px;">
+            <p class="pCase" style="font-size: x-small; color: #BFED46; margin-bottom: 5px;">Account</p>
+            <input type="button" onclick="handleLogout()" class="submit" value="Logout" style="width: 100%;">
           </div>
         </div>
 
-        <div style="text-align: right; margin-top: 15px;">
-          <input type="button" onclick="handleLogout()" class="submit" value="Logout">
+        <!-- Main content area -->
+        <div class="dispBoxRight" style="flex: 1;">
+          <div id="upload-tab" class="tab-content active">
+            <h2 class="pCase" style="margin-top: 0;">Upload New Release</h2>
+            <form id="uploadForm" onsubmit="handleUpload(event)">
+              <!-- form fields here -->
+            </form>
+          </div>
+
+          <div id="releases-tab" class="tab-content" style="display: none;">
+            <h2 class="pCase" style="margin-top: 0;">Your Releases</h2>
+            <div class="dispBoxLeft" id="userReleases" style="border: none; padding: 0;">
+              <p id="userReleasesMessage">Loading your releases...</p>
+              <div id="userReleasesList"></div>
+            </div>
+          </div>
+
+          <div id="tickets-tab" class="tab-content" style="display: none;">
+            <h2 class="pCase" style="margin-top: 0;">Support Tickets</h2>
+            <div class="dispBoxLeft" style="border: none; padding: 0;">
+              <div style="margin-bottom: 20px;">
+                <input type="button" value="Create New Ticket" class="submit" onclick="showNewTicketForm()">
+              </div>
+
+              <div id="noTicketsMessage" style="display: block;">
+                <p>You don't have any support tickets yet.</p>
+              </div>
+
+              <div id="ticketList" style="display: none;">
+                <!-- Ticket list will go here -->
+                <table style="width: 100%; border-collapse: collapse;">
+                  <thead>
+                    <tr style="background: #444;">
+                      <th style="text-align: left; padding: 8px; border-bottom: 1px solid #333;">ID</th>
+                      <th style="text-align: left; padding: 8px; border-bottom: 1px solid #333;">Subject</th>
+                      <th style="text-align: left; padding: 8px; border-bottom: 1px solid #333;">Status</th>
+                      <th style="text-align: left; padding: 8px; border-bottom: 1px solid #333;">Date</th>
+                      <th style="text-align: left; padding: 8px; border-bottom: 1px solid #333;">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <!-- Ticket rows would be added dynamically -->
+                  </tbody>
+                </table>
+              </div>
+
+              <div id="newTicketForm" style="display: none; margin-top: 20px;">
+                <h3 class="pCase">Create New Support Ticket</h3>
+                <div style="margin-bottom: 10px;">
+                  <p class="pCase">Subject*</p>
+                  <input type="text" id="ticketSubject" class="newsletterInput" required>
+                </div>
+                <div style="margin-bottom: 10px;">
+                  <p class="pCase">Category*</p>
+                  <select id="ticketCategory" class="newsletterInput" required>
+                    <option value="">Select Category</option>
+                    <option value="technical">Technical Issue</option>
+                    <option value="billing">Billing Question</option>
+                    <option value="release">Release Problem</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div style="margin-bottom: 10px;">
+                  <p class="pCase">Description*</p>
+                  <textarea id="ticketDescription" class="newsletterInput" rows="5" required></textarea>
+                </div>
+                <div style="text-align: right;">
+                  <input type="button" value="Cancel" class="submit" onclick="hideNewTicketForm()" style="margin-right: 5px;">
+                  <input type="button" value="Submit Ticket" class="submit" onclick="submitTicket()">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="payouts-tab" class="tab-content" style="display: none;">
+            <h2 class="pCase" style="margin-top: 0;">Payouts & Finance</h2>
+            <div class="dispBoxLeft" style="border: none; padding: 0;">
+              <!-- Revenue summary card -->
+              <div style="background: #5D5D5D; border: 5px solid #484848; padding: 15px; margin-bottom: 20px;">
+                <h3 class="pCase" style="margin-top: 0; margin-bottom: 15px;">Revenue Summary</h3>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                  <div>
+                    <p style="margin: 0; font-size: small; color: #BFED46;">Current Balance</p>
+                    <p style="margin: 5px 0 0 0; font-size: x-large; font-weight: bold;">$0.00</p>
+                  </div>
+                  <div>
+                    <p style="margin: 0; font-size: small; color: #BFED46;">Last Month Earnings</p>
+                    <p style="margin: 5px 0 0 0; font-size: x-large; font-weight: bold;">$0.00</p>
+                  </div>
+                  <div>
+                    <p style="margin: 0; font-size: small; color: #BFED46;">Total Earnings</p>
+                    <p style="margin: 5px 0 0 0; font-size: x-large; font-weight: bold;">$0.00</p>
+                  </div>
+                </div>
+                <div style="text-align: right; margin-top: 10px;">
+                  <input type="button" value="Request Payout" class="submit">
+                </div>
+              </div>
+
+              <!-- Payout history section -->
+              <h3 class="pCase">Payout History</h3>
+              <p>No payout history available yet.</p>
+
+              <!-- Payout method section -->
+              <h3 class="pCase" style="margin-top: 20px;">Payout Methods</h3>
+              <div style="background: #5D5D5D; border: 5px solid #484848; padding: 15px; margin-top: 10px;">
+                <p>No payout methods configured.</p>
+                <input type="button" value="Add Payout Method" class="submit" style="margin-top: 10px;">
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     `;
@@ -533,15 +638,54 @@ function showLoggedInState(user, isAdmin) {
     // Set up upload form
     setupUploadForm();
 
-    // Mark upload tab as active by default
-    const uploadTabBtn = document.querySelector('#dashboard-nav dd a[onclick*="upload"]');
-    if (uploadTabBtn) {
-      uploadTabBtn.classList.add('active');
-    }
-
     // Load user's releases
     loadUserReleases(user.email);
   }
+}
+
+// Show tab content in artist dashboard
+function showTab(tabName) {
+  // Update tab buttons
+  const tabs = document.querySelectorAll('#dashboard-nav dd a');
+  tabs.forEach(tab => {
+    tab.classList.remove('active');
+  });
+
+  // Add active class to the clicked tab
+  const activeTab = document.querySelector(`#dashboard-nav dd a[onclick*="${tabName}"]`);
+  if (activeTab) {
+    activeTab.classList.add('active');
+  }
+
+  // Update tab content
+  document.querySelectorAll('.tab-content').forEach(content => {
+    content.style.display = 'none';
+  });
+
+  // Show the selected tab content
+  const tabContent = document.getElementById(`${tabName}-tab`);
+  if (tabContent) {
+    tabContent.style.display = 'block';
+
+    // If it's the upload tab, make sure we have the upload form
+    if (tabName === 'upload') {
+      setupUploadForm();
+    }
+  }
+}
+
+// Support ticket functions
+function showNewTicketForm() {
+  document.getElementById('newTicketForm').style.display = 'block';
+}
+
+function hideNewTicketForm() {
+  document.getElementById('newTicketForm').style.display = 'none';
+}
+
+function submitTicket() {
+  alert('This feature is not yet implemented.');
+  hideNewTicketForm();
 }
 
 // Setup artwork preview and validation
@@ -586,6 +730,82 @@ function setupArtworkValidation() {
         fileNameSpan.textContent = 'No file selected';
       }
     });
+  }
+
+  // Set up track file inputs
+  setupTrackFileUploads();
+}
+
+// Setup track file uploads with styled buttons using submit buttons
+function setupTrackFileUploads() {
+  const trackFileInputs = document.querySelectorAll('.track-file');
+  trackFileInputs.forEach((input) => {
+    // Create a container for the file name if it doesn't exist
+    let fileNameSpan = input.nextElementSibling;
+    if (!fileNameSpan || !fileNameSpan.classList.contains('track-file-name')) {
+      fileNameSpan = document.createElement('span');
+      fileNameSpan.className = 'track-file-name';
+      fileNameSpan.style.marginLeft = '10px';
+      fileNameSpan.style.fontSize = 'x-small';
+      fileNameSpan.style.fontWeight = 'normal';
+      fileNameSpan.textContent = 'No file selected';
+      input.parentNode.insertBefore(fileNameSpan, input.nextSibling);
+    }
+
+    // Make sure the input has a unique ID
+    if (!input.id || input.id === 'audio-file-template') {
+      const trackItem = input.closest('.track-item');
+      if (trackItem) {
+        const trackId = trackItem.id.split('-').pop();
+        input.id = `audio-file-${trackId}`;
+      }
+    }
+
+    // Handle file selection
+    input.addEventListener('change', function(e) {
+      // Find the closest track-file-name span to this input
+      const nameSpan = this.parentNode.querySelector('.track-file-name');
+      if (this.files.length > 0 && nameSpan) {
+        nameSpan.textContent = this.files[0].name;
+      } else if (nameSpan) {
+        nameSpan.textContent = 'No file selected';
+      }
+    });
+  });
+}
+
+// Validate artwork dimensions
+function validateArtwork(input) {
+  const file = input.files[0];
+  const errorDiv = document.getElementById('artworkError');
+  const preview = document.getElementById('artworkPreviewImg');
+
+  // Reset error state
+  errorDiv.style.display = 'none';
+  input.setCustomValidity('');
+
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = new Image();
+      img.onload = function() {
+        // Check if image is square and at least 1500x1500
+        if (img.width !== img.height || img.width < 1500) {
+          errorDiv.style.display = 'block';
+          input.setCustomValidity('Artwork must be square and at least 1500x1500 pixels.');
+        } else {
+          // Valid image
+          errorDiv.style.display = 'none';
+          input.setCustomValidity('');
+        }
+
+        // Show the preview regardless of validation
+        preview.src = e.target.result;
+        preview.style.display = 'block';
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
   }
 
   // Set up track file inputs
